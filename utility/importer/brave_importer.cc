@@ -357,5 +357,8 @@ void BraveImporter::ImportLedger() {
     wallet_seed.push_back(static_cast<uint8_t>(value));
   }
 
-  //bridge_->UpdateLedger(ledger);
+  BraveLedger ledger;
+  ledger.wallet_seed = wallet_seed;
+
+  bridge_->UpdateLedger(ledger);
 }
