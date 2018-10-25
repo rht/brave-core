@@ -1,0 +1,13 @@
+diff --git a/third_party/blink/renderer/core/layout/intersection_geometry.cc b/third_party/blink/renderer/core/layout/intersection_geometry.cc
+index 2d4fa917d1ad75b19863a02f8d3906b70b34e6f1..03f18a89117f2ef2552aa69083fcb4b15cce2ea1 100644
+--- a/third_party/blink/renderer/core/layout/intersection_geometry.cc
++++ b/third_party/blink/renderer/core/layout/intersection_geometry.cc
+@@ -163,7 +163,7 @@ void IntersectionGeometry::ClipToRoot() {
+   // date, so we fall back to the slow path. If we're unthrottled, then ensure
+   // that prepaint has run and the frame view doesn't need a paint property
+   // update.
+-#if DCHECK_IS_ON()
++#if 0
+   {
+     auto* frame_view = target_->GetFrameView();
+     auto* layout_view = frame_view->GetLayoutView();
