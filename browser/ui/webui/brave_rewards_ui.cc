@@ -7,20 +7,21 @@
 #include "base/base64.h"
 #include "base/memory/weak_ptr.h"
 
-#include "brave/components/brave_rewards/browser/rewards_service.h"
-#include "brave/components/brave_rewards/browser/wallet_properties.h"
+#include "brave/browser/brave_rewards/add_funds_popup.h"
+#include "brave/common/webui_url_constants.h"
 #include "brave/components/brave_rewards/browser/balance_report.h"
+#include "brave/components/brave_rewards/browser/buildflags/buildflags.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service_observer.h"
+#include "brave/components/brave_rewards/browser/rewards_service.h"
 #include "brave/components/brave_rewards/browser/rewards_service_factory.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
-#include "brave/common/webui_url_constants.h"
+#include "brave/components/brave_rewards/browser/wallet_properties.h"
 #include "chrome/browser/profiles/profile.h"
-#include "content/public/browser/web_ui_message_handler.h"
+#include "content/public/browser/render_view_host.h"
+#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui_data_source.h"
 #include "content/public/browser/web_ui_message_handler.h"
-#include "content/public/browser/web_contents.h"
-#include "content/public/browser/render_view_host.h"
 #include "content/public/common/bindings_policy.h"
 
 #if !defined(OS_ANDROID)
@@ -30,6 +31,9 @@
 #include "components/grit/components_scaled_resources.h"
 #endif
 
+#if BUILDFLAG(UPHOLD_WIDGET_ENABLED)
+#include "brave/browser/brave_rewards/add_funds_popup.h"
+#endif
 
 using content::WebUIMessageHandler;
 
@@ -52,6 +56,7 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void GetAllBalanceReports();
   void HandleCreateWalletRequested(const base::ListValue* args);
   void GetWalletProperties(const base::ListValue* args);
+  void AddFundsToWallet(const base::ListValue* args);
   void GetGrant(const base::ListValue* args);
   void GetGrantCaptcha(const base::ListValue* args);
   void GetWalletPassphrase(const base::ListValue* args);
@@ -121,13 +126,17 @@ class RewardsDOMHandler : public WebUIMessageHandler,
       const brave_rewards::RewardsNotificationService::RewardsNotificationsList&
           notifications_list) override;
 
+#if BUILDFLAG(UPHOLD_WIDGET_ENABLED)
+  std::unique_ptr<brave_rewards::AddFundsPopup> add_funds_popup_;
+#endif
   brave_rewards::RewardsService* rewards_service_;  // NOT OWNED
   base::WeakPtrFactory<RewardsDOMHandler> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(RewardsDOMHandler);
 };
 
-RewardsDOMHandler::RewardsDOMHandler() : weak_factory_(this) {}
+RewardsDOMHandler::RewardsDOMHandler()
+  : add_funds_popup_(nullptr), weak_factory_(this) {}
 
 RewardsDOMHandler::~RewardsDOMHandler() {
   if (rewards_service_)
@@ -140,6 +149,9 @@ void RewardsDOMHandler::RegisterMessages() {
                           base::Unretained(this)));
   web_ui()->RegisterMessageCallback("brave_rewards.getWalletProperties",
       base::BindRepeating(&RewardsDOMHandler::GetWalletProperties,
+                          base::Unretained(this)));
+  web_ui()->RegisterMessageCallback("brave_rewards.addFundsToWallet",
+      base::BindRepeating(&RewardsDOMHandler::AddFundsToWallet,
                           base::Unretained(this)));
   web_ui()->RegisterMessageCallback("brave_rewards.getGrant",
                                     base::BindRepeating(&RewardsDOMHandler::GetGrant,
@@ -241,6 +253,25 @@ void RewardsDOMHandler::GetWalletProperties(const base::ListValue* args) {
   rewards_service_->FetchWalletProperties();
 }
 
+void RewardsDOMHandler::AddFundsToWallet(const base::ListValue* args) {
+  if (!rewards_service_)
+    return;
+
+#if BUILDFLAG(UPHOLD_WIDGET_ENABLED)
+  content::WebContents* contents = web_ui()->GetWebContents();
+  if (!contents)
+    return;
+
+  if (!add_funds_popup_) {
+    add_funds_popup_ = std::make_unique<brave_rewards::AddFundsPopup>();
+    if (!add_funds_popup_)
+      return;
+  }
+
+  add_funds_popup_->ShowPopup(contents, rewards_service_);
+#endif
+}
+
 void RewardsDOMHandler::OnWalletInitialized(
     brave_rewards::RewardsService* rewards_service,
     int error_code) {
@@ -298,6 +329,11 @@ void RewardsDOMHandler::OnWalletProperties(
     result.SetDictionary("wallet", std::move(walletInfo));
 
     web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.walletProperties", result);
+
+#if !BUILDFLAG(UPHOLD_WIDGET_ENABLED)
+      web_ui()->CallJavascriptFunctionUnsafe(
+        "brave_rewards.addFundsPopupUnavailable");
+#endif
   }
 }
 

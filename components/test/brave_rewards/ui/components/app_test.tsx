@@ -17,6 +17,7 @@ describe('rewardsPage component', () => {
     it('should map the default state', () => {
       expect(mapStateToProps(rewardsInitialState)).toEqual({
         rewardsData: {
+          addFundsPopupUnavailable: false,
           walletCreated: false,
           walletCreateFailed: false,
           createdTimestamp: null,
