@@ -6,6 +6,7 @@
 
 #include "brave/components/brave_rewards/browser/buildflags/buildflags.h"
 #include "brave/components/brave_shields/browser/brave_shields_web_contents_observer.h"
+#include "brave/components/brave_shields/browser/tracking_protection_helper.h"
 #include "content/public/browser/web_contents.h"
 
 #if BUILDFLAG(BRAVE_REWARDS_ENABLED)
@@ -16,6 +17,8 @@ namespace brave {
 
 void AttachTabHelpers(content::WebContents* web_contents) {
   brave_shields::BraveShieldsWebContentsObserver::CreateForWebContents(
+      web_contents);
+  brave_shields::TrackingProtectionHelper::CreateForWebContents(
       web_contents);
 #if BUILDFLAG(BRAVE_REWARDS_ENABLED)
   brave_rewards::RewardsHelper::CreateForWebContents(web_contents);
