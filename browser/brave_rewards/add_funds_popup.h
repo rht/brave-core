@@ -29,8 +29,8 @@ namespace brave_rewards {
 class AddFundsPopupContentSettings;
 class RewardsService;
 
-class AddFundsPopup  : public views::WidgetObserver {
-public:
+class AddFundsPopup : public views::WidgetObserver {
+ public:
   AddFundsPopup();
   ~AddFundsPopup() override;
 

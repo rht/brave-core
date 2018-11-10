@@ -7,7 +7,6 @@
 #include "base/base64.h"
 #include "base/memory/weak_ptr.h"
 
-#include "brave/browser/brave_rewards/add_funds_popup.h"
 #include "brave/common/webui_url_constants.h"
 #include "brave/components/brave_rewards/browser/balance_report.h"
 #include "brave/components/brave_rewards/browser/buildflags/buildflags.h"
@@ -135,8 +134,11 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   DISALLOW_COPY_AND_ASSIGN(RewardsDOMHandler);
 };
 
-RewardsDOMHandler::RewardsDOMHandler()
-  : add_funds_popup_(nullptr), weak_factory_(this) {}
+RewardsDOMHandler::RewardsDOMHandler() :
+#if BUILDFLAG(UPHOLD_WIDGET_ENABLED)
+  add_funds_popup_(nullptr),
+#endif
+  weak_factory_(this) {}
 
 RewardsDOMHandler::~RewardsDOMHandler() {
   if (rewards_service_)
@@ -331,7 +333,7 @@ void RewardsDOMHandler::OnWalletProperties(
     web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.walletProperties", result);
 
 #if !BUILDFLAG(UPHOLD_WIDGET_ENABLED)
-      web_ui()->CallJavascriptFunctionUnsafe(
+    web_ui()->CallJavascriptFunctionUnsafe(
         "brave_rewards.addFundsPopupUnavailable");
 #endif
   }

@@ -53,7 +53,8 @@ export const rewardsInitialState: Rewards.ApplicationState = {
     contributionNonVerified: true,
     contributionVideos: true,
     donationAbilityYT: true,
-    donationAbilityTwitter: true
+    donationAbilityTwitter: true,
+    addFundsPopupUnavailable: false
   }
 }
 

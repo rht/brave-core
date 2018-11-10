@@ -38,6 +38,14 @@ describe('rewards_actions', () => {
     })
   })
 
+  it('onAddFundsPopupUnavailable', () => {
+    expect(actions.onAddFundsPopupUnavailable()).toEqual({
+      type: types.ADD_FUNDS_POPUP_UNAVAILABLE,
+      meta: undefined,
+      payload: undefined
+    })
+  })
+
   it('onSettingSave', () => {
     expect(actions.onSettingSave('key', 'value')).toEqual({
       type: types.ON_SETTING_SAVE,

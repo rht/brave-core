@@ -4,6 +4,7 @@
 
 const qr = require('qr-image')
 import BigNumber from 'bignumber.js'
+import { Address } from 'brave-ui/features/rewards/modalAddFunds'
 
 export let actions: any = null
 
@@ -81,6 +82,29 @@ export const generateQR = (addresses: Record<Rewards.AddressesType, string>) => 
   for (let type in addresses) {
     generate(type as Rewards.AddressesType, addresses[type])
   }
+}
+
+export const getAddresses = (addresses?: Record<Rewards.AddressesType, Rewards.Address>) => {
+  let result: Address[] = []
+
+  if (!addresses) {
+    return result
+  }
+
+  const sortedArray = [ 'BTC', 'ETH', 'BAT', 'LTC' ]
+
+  sortedArray.forEach((type: Rewards.AddressesType) => {
+    const item: Rewards.Address = addresses[type]
+    if (item) {
+      result.push({
+        type,
+        qr: item.qr,
+        address: item.address
+      })
+    }
+  })
+
+  return result
 }
 
 export const convertProbiToFixed = (probi: string, places: number = 1) => {

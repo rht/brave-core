@@ -49,6 +49,10 @@ window.cr.define('brave_rewards', function () {
     return newActions
   }
 
+  function addFundsPopupUnavailable () {
+    getActions().onAddFundsPopupUnavailable()
+  }
+
   function walletCreated () {
     getActions().onWalletCreated()
   }
@@ -119,6 +123,7 @@ window.cr.define('brave_rewards', function () {
 
   return {
     initialize,
+    addFundsPopupUnavailable,
     walletCreated,
     walletCreateFailed,
     walletProperties,

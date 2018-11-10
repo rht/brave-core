@@ -33,12 +33,6 @@ describe('wallet reducer', () => {
     })
   })
 
-  describe('ADD_FUNDS_TO_WALLET', () => {
-    it('calls addFundsToWallet', () => {
-      // TODO: mock chrome.send and use jest.spyOn()
-    })
-  })
-
   describe('WALLET_CREATED', () => {
     it('wallet created', () => {
       const assertion = reducers(undefined, {
@@ -72,6 +66,31 @@ describe('wallet reducer', () => {
 
       const expectedState: Rewards.State = { ...defaultState }
       expectedState.walletCreateFailed = true
+
+
+      expect(assertion).toEqual({
+        rewardsData: expectedState
+      })
+    })
+  })
+
+  describe('ADD_FUNDS_TO_WALLET', () => {
+    it('calls addFundsToWallet', () => {
+      // TODO: mock chrome.send and use jest.spyOn()
+    })
+  })
+
+  describe('ADD_FUNDS_POPUP_UNAVAILABLE', () => {
+    it('add funds popup unavailable', () => {
+      const assertion = reducers(undefined, {
+        type: types.ADD_FUNDS_POPUP_UNAVAILABLE,
+        payload: {
+          addFundsPopupUnavailable: true
+        }
+      })
+
+      const expectedState: Rewards.State = { ...defaultState }
+      expectedState.addFundsPopupUnavailable = true
 
 
       expect(assertion).toEqual({

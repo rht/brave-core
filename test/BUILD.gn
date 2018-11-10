@@ -226,7 +226,6 @@ test("brave_browser_tests") {
     "//brave/browser/brave_features_browsertest.cc",
     "//brave/browser/brave_profile_prefs_browsertest.cc",
     "//brave/browser/brave_resources_browsertest.cc",
-    "//brave/browser/brave_rewards/add_funds_popup_browsertest.cc",
     "//brave/browser/extensions/brave_tor_client_updater_browsertest.cc",
     "//brave/browser/extensions/api/brave_shields_api_browsertest.cc",
     "//brave/browser/extensions/api/brave_theme_api_browsertest.cc",
@@ -269,6 +268,12 @@ test("brave_browser_tests") {
     ]
   }
 
+  if (uphold_widget_enabled) {
+    sources += [
+      "//brave/browser/brave_rewards/add_funds_popup_browsertest.cc",
+    ]
+  }
+
   if (is_win || is_linux) {
     sources += [
       "//brave/browser/renderer_context_menu/brave_spelling_options_submenu_observer_browsertest.cc",
@@ -298,8 +303,14 @@ test("brave_browser_tests") {
     "//ppapi/buildflags",
     ":brave_browser_tests_deps",
     ":browser_tests_runner",
-    "//testing/gmock",
   ]
+
+  if (uphold_widget_enabled) {
+    deps += [
+      "//testing/gmock",
+    ]
+  }
+
   data_deps = [
     "//ppapi:ppapi_tests",
     "//ppapi:power_saver_test_plugin",

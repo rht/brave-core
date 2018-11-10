@@ -44,10 +44,15 @@ export const defaultState: Rewards.State = {
   contributeLoad: false,
   recurringLoad: false,
   tipsLoad: false,
-  excluded: []
+  excluded: [],
+  addFundsPopupUnavailable: false
 }
 
-const cleanData = (state: Rewards.State) => state
+const cleanData = (state: Rewards.State): Rewards.State => {
+  state = { ...state }
+  state.addFundsPopupUnavailable = defaultState.addFundsPopupUnavailable
+  return state
+}
 
 export const load = (): Rewards.State => {
   const data = window.localStorage.getItem(keyName)
