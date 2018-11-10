@@ -1021,8 +1021,6 @@ void RewardsServiceImpl::TriggerOnRecoverWallet(ledger::Result result,
     newGrants.push_back(grant);
   }
   for (auto& observer : observers_)
-    // BSC: can register another observer
-    // the observer can then do the follow up work
     observer.OnRecoverWallet(this, result, balance, newGrants);
 }
 

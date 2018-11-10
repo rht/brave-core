@@ -22,6 +22,7 @@ void BraveInProcessImporterBridge::UpdateStats(const BraveStats& stats) {
 
 void BraveInProcessImporterBridge::UpdateLedger(
     const BraveLedger& ledger) {
+  writer_->BindObserver();
   writer_->UpdateLedger(ledger);
 }
 
