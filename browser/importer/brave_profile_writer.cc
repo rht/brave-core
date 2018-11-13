@@ -10,6 +10,7 @@
 #include "brave/components/brave_rewards/browser/rewards_service_factory.h"
 #include "brave/utility/importer/brave_importer.h"
 
+#include "base/run_loop.h"
 #include "base/time/time.h"
 #include "chrome/browser/profiles/profile.h"
 #include "content/public/browser/browser_context.h"
@@ -26,17 +27,7 @@ BraveProfileWriter::BraveProfileWriter(Profile* profile)
     : ProfileWriter(profile) {}
 
 BraveProfileWriter::~BraveProfileWriter() {
-  if (rewards_service_) {
-    rewards_service_->RemoveObserver(this);
-  }
-}
-
-void BraveProfileWriter::BindObserver() {
-  rewards_service_ =
-      brave_rewards::RewardsServiceFactory::GetForProfile(profile_);
-  if (rewards_service_) {
-    rewards_service_->AddObserver(this);
-  }
+  CHECK(!IsInObserverList());
 }
 
 void BraveProfileWriter::AddCookies(
@@ -79,20 +70,29 @@ void BraveProfileWriter::UpdateStats(const BraveStats& stats) {
   }
 }
 
-void BraveProfileWriter::OnRecoverWallet(brave_rewards::RewardsService* rewards_service,
-                                         unsigned int result,
-                                         double balance,
-                                         std::vector<brave_rewards::Grant> grants) {
-  LOG(ERROR) << "BSC]] BraveProfileWriter::OnRecoverWallet";
+void BraveProfileWriter::OnRecoverWallet(
+    brave_rewards::RewardsService* rewards_service,
+    unsigned int result,
+    double balance,
+    std::vector<brave_rewards::Grant> grants) {
+  LOG(INFO) << "In RewardsServiceObserver::OnRecoverWallet, result: " << result << ", balance: " << balance;
+
+  // TODO check result
   // TODO: create pref - ready to show pin migrate interface
   //       or "rewards imported" (similar to how Muon has the flag)
+
+  CHECK(!quit_closure_for_wallet_recovery_.is_null());
+  quit_closure_for_wallet_recovery_.Run();
 }
 
 void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
+  rewards_service_ =
+      brave_rewards::RewardsServiceFactory::GetForProfile(profile_);
   if (!rewards_service_) {
     LOG(ERROR) << "Failed to get RewardsService for profile.";
     return;
   }
+  rewards_service_->AddObserver(this);
 
   // TODO: uncomment me
   // Avoid overwriting Brave Rewards wallet if one already exists.
@@ -135,5 +135,27 @@ void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
   }
 
   // Start the wallet recovery
+  LOG(INFO) << "Starting wallet recovery...";
+  LOG(INFO) << "ledger.passphrase: " << ledger.passphrase;
   rewards_service_->RecoverWallet(ledger.passphrase);
+
+  // If the wallet recovery process has not finished, block on it
+  LOG(INFO) << "Starting run loop to block until OnWalletRecover...";
+
+  // Option 1. Using a base::RunLoop::Type::Default RunLoop blocks the whole browser...
+  //base::RunLoop loop;
+
+  // Option 2. Blocking with base::RunLoop::Type::kNestableTasksAllowed allows
+  // execution to continue, but does not block as expected/desired. The async
+  // profile import process continues, ImportEnded is signaled, and
+  // BraveProfileWriter is destructed before RecoverWallet
+  // finishes/OnWalletRecover callback is run. This is obviously also not what
+  // we want.
+  base::RunLoop loop(base::RunLoop::Type::kNestableTasksAllowed);
+  quit_closure_for_wallet_recovery_ = loop.QuitClosure();
+  loop.Run();
+  quit_closure_for_wallet_recovery_ = base::Closure();
+
+  LOG(INFO) << "RunLoop done, removing observer...";
+  rewards_service_->RemoveObserver(this);
 }

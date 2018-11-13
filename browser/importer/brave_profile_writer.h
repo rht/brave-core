@@ -20,13 +20,11 @@ class BraveProfileWriter : public ProfileWriter,
  public:
   explicit BraveProfileWriter(Profile* profile);
 
-  void BindObserver();
-
   virtual void AddCookies(const std::vector<net::CanonicalCookie>& cookies);
   virtual void UpdateStats(const BraveStats& stats);
   virtual void UpdateLedger(const BraveLedger& ledger);
 
-  // RewardsServiceObserver
+  // brave_rewards::RewardsServiceObserver:
   void OnRecoverWallet(brave_rewards::RewardsService* rewards_service,
                        unsigned int result,
                        double balance,
@@ -34,8 +32,11 @@ class BraveProfileWriter : public ProfileWriter,
 
  protected:
   friend class base::RefCountedThreadSafe<BraveProfileWriter>;
-  brave_rewards::RewardsService* rewards_service_;
   ~BraveProfileWriter() override;
+
+ private:
+  brave_rewards::RewardsService* rewards_service_;
+  base::Closure quit_closure_for_wallet_recovery_;
 };
 
 #endif  // BRAVE_BROWSER_IMPORTER_BRAVE_PROFILE_WRITER_H_
