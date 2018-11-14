@@ -14,6 +14,7 @@
 
 struct BraveStats;
 struct BraveLedger;
+class BraveInProcessImporterBridge;
 
 class BraveProfileWriter : public ProfileWriter,
                            public brave_rewards::RewardsServiceObserver {
@@ -23,6 +24,8 @@ class BraveProfileWriter : public ProfileWriter,
   virtual void AddCookies(const std::vector<net::CanonicalCookie>& cookies);
   virtual void UpdateStats(const BraveStats& stats);
   virtual void UpdateLedger(const BraveLedger& ledger);
+
+  void SetBridge(BraveInProcessImporterBridge* bridge);
 
   // brave_rewards::RewardsServiceObserver:
   void OnRecoverWallet(brave_rewards::RewardsService* rewards_service,
@@ -36,7 +39,7 @@ class BraveProfileWriter : public ProfileWriter,
 
  private:
   brave_rewards::RewardsService* rewards_service_;
-  base::Closure quit_closure_for_wallet_recovery_;
+  BraveInProcessImporterBridge* bridge_ptr_;
 };
 
 #endif  // BRAVE_BROWSER_IMPORTER_BRAVE_PROFILE_WRITER_H_
