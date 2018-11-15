@@ -12,7 +12,6 @@
 #include "brave/browser/ui/views/location_bar/brave_location_bar_view.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
 #include "brave/components/brave_shields/common/brave_shield_constants.h"
-#include "brave/components/toolbar/constants.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/browser.h"
@@ -37,9 +36,6 @@ namespace {
 
 constexpr int kPopupPreferredHeight = 800;
 constexpr int kPopupPreferredWidth = 1100;
-
-// Referrer.
-const char kRewardsHost[] = "rewards";
 
 // URL to open in the popup.
 const char kAddFundsUrl[] = "https://uphold-widget.herokuapp.com/index.php";
@@ -372,34 +368,21 @@ void AddFundsPopup::OpenPopup(content::WebContents* initiator,
   if (!initiator || !rewards_service)
     return;
 
+  content::WebContentsDelegate* wc_delegate = initiator->GetDelegate();
+  if (!wc_delegate)
+    return;
+
   const std::map<std::string, std::string> addresses =
       rewards_service->GetAddresses();
   if (addresses.empty())
     return;
 
-  content::WebContentsDelegate* wc_delegate = initiator->GetDelegate();
-  if (!wc_delegate)
-    return;
+  const GURL gurl(std::string(kAddFundsUrl) + "?" +
+                  ToQueryString(GetAddressesAsJSON(addresses)));
 
-  const GURL gurl(kAddFundsUrl);
-  const GURL referrer_gurl(std::string(brave_toolbar::kInternalUIScheme) +
-                           kRewardsHost);
-  const content::Referrer referrer(referrer_gurl,
-                                   blink::kWebReferrerPolicyAlways);
-  content::OpenURLParams params(gurl, referrer,
+  content::OpenURLParams params(gurl, content::Referrer(),
                                 WindowOpenDisposition::NEW_POPUP,
-                                ui::PAGE_TRANSITION_LINK, true);
-
-  // Supply addresses via post data. The data is currently in the query string
-  // format (application/x-www-form-urlencoded):
-  // addresses=UrlEscapedBase64EncodedStringifiedJSON.
-  params.uses_post = true;
-  const std::string data = ToQueryString(GetAddressesAsJSON(addresses));
-  params.post_data =
-      network::ResourceRequestBody::CreateFromBytes(data.data(), data.size());
-  params.extra_headers =
-      std::string("Content-Type: application/x-www-form-urlencoded\r\n") +
-      "Content-Length: " + std::to_string(data.size()) + "\r\n\r\n";
+                                ui::PAGE_TRANSITION_LINK, false);
 
   // Let popup content bypass shields, use camera and autoplay.
   std::unique_ptr<AddFundsPopupContentSettings> popup_content_settings =
