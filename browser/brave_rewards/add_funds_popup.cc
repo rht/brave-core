@@ -38,10 +38,10 @@ constexpr int kPopupPreferredHeight = 800;
 constexpr int kPopupPreferredWidth = 1100;
 
 // URL to open in the popup.
-const char kAddFundsUrl[] = "https://uphold-widget.herokuapp.com/index.php";
+const char kAddFundsUrl[] = "https://uphold-widget.brave.com/index.php";
 
 // Content permission URLs and patterns.
-const char kAddFundsOrigin[] = "https://uphold-widget.herokuapp.com/";
+const char kAddFundsOrigin[] = "https://uphold-widget.brave.com/";
 const char kFirstParty[] = "https://firstParty";
 
 const char kUpholdPattern[] = "https://[*.]uphold.com/*";
