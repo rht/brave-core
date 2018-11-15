@@ -7,19 +7,73 @@
 #include "base/files/file_util.h"
 #include "base/guid.h"
 #include "base/logging.h"
+#include "base/memory/ptr_util.h"
 #include "base/sequenced_task_runner.h"
 #include "base/task_runner_util.h"
 #include "base/task/post_task.h"
 #include "bat/ads/ads.h"
 #include "bat/ads/url_session.h"
+#include "brave/components/brave_ads/browser/ad_notification.h"
 #include "brave/components/brave_ads/browser/bundle_state_database.h"
+#include "chrome/browser/notifications/notification_display_service.h"
+#include "chrome/browser/notifications/notification_display_service_impl.h"
+#include "chrome/browser/notifications/notification_handler.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/ui/browser.h"
+#include "chrome/browser/ui/browser_finder.h"
+#include "chrome/browser/ui/browser_navigator_params.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/message_center/public/cpp/notification.h"
 
 
 namespace brave_ads {
+
+class AdsNotificationHandler : public NotificationHandler {
+ public:
+  AdsNotificationHandler(AdsServiceImpl* ads_service) :
+      ads_service_(ads_service->AsWeakPtr()) {}
+
+  ~AdsNotificationHandler() override {}
+
+  // NotificationHandler implementation.
+  void OnShow(Profile* profile,
+              const std::string& notification_id) override {
+    if (ads_service_)
+      ads_service_->OnShow(profile, notification_id);
+  }
+
+  void OnClose(Profile* profile,
+               const GURL& origin,
+               const std::string& notification_id,
+               bool by_user,
+               base::OnceClosure completed_closure) override {
+    if (!ads_service_) {
+      std::move(completed_closure).Run();
+      return;
+    }
+
+    ads_service_->OnClose(
+        profile, origin, notification_id, by_user,
+        std::move(completed_closure));
+  }
+
+  void DisableNotifications(Profile* profile,
+                            const GURL& origin) override {}
+
+
+  void OpenSettings(Profile* profile, const GURL& origin) override {
+    if (ads_service_)
+      ads_service_->OpenSettings(profile, origin);
+  }
+
+ private:
+
+  base::WeakPtr<AdsServiceImpl> ads_service_;
+
+  DISALLOW_COPY_AND_ASSIGN(AdsNotificationHandler);
+};
 
 namespace {
 
@@ -67,7 +121,8 @@ AdsServiceImpl::AdsServiceImpl(Profile* profile) :
     base_path_(profile_->GetPath().AppendASCII("ads_service")),
     next_timer_id_(0),
     bundle_state_backend_(
-        new BundleStateDatabase(base_path_.AppendASCII("bundle_state"))) {
+        new BundleStateDatabase(base_path_.AppendASCII("bundle_state"))),
+    display_service_(NotificationDisplayService::GetForProfile(profile_)) {
   DCHECK(!profile_->IsOffTheRecord());
 
   if (is_enabled())
@@ -80,6 +135,13 @@ AdsServiceImpl::~AdsServiceImpl() {
 
 void AdsServiceImpl::Init() {
   DCHECK(is_enabled());
+
+  auto* display_service_impl =
+      static_cast<NotificationDisplayServiceImpl*>(display_service_);
+
+  display_service_impl->AddNotificationHandler(
+      NotificationHandler::Type::BRAVE_ADS,
+      std::make_unique<AdsNotificationHandler>(this));
 
   ads_.reset(ads::Ads::CreateInstance(this));
 }
@@ -100,6 +162,19 @@ uint64_t AdsServiceImpl::GetAdsPerHour() const {
 uint64_t AdsServiceImpl::GetAdsPerDay() const {
   // TODO(bridiver) - implement this
   return 100;
+}
+
+void AdsServiceImpl::ShowNotification(
+    std::unique_ptr<const ads::NotificationInfo> info) {
+  std::string notification_id;
+  auto notification =
+      CreateAdNotification(*info, &notification_id);
+
+  // TODO(bridiver) - cancel all open notifications if ads are disabled
+  notification_ids_[notification_id] = std::move(info);
+
+  display_service_->Display(NotificationHandler::Type::BRAVE_ADS,
+                            *notification);
 }
 
 void AdsServiceImpl::Save(const std::string& name,
@@ -180,6 +255,42 @@ void AdsServiceImpl::OnGetAdsForCategory(
 
 void AdsServiceImpl::GetAdsForSampleCategory(
     ads::OnGetAdsForCategoryCallback callback) {
+}
+
+void AdsServiceImpl::OnShow(Profile* profile,
+                            const std::string& notification_id) {}
+
+void AdsServiceImpl::OnClose(Profile* profile,
+                             const GURL& origin,
+                             const std::string& notification_id,
+                             bool by_user,
+                             base::OnceClosure completed_closure) {
+  notification_ids_.erase(notification_id);
+  // TODO(bridiver) - this seems like info that should go back to the model
+  std::move(completed_closure).Run();
+}
+
+void AdsServiceImpl::OpenSettings(Profile* profile,
+                                  const GURL& origin) {
+  DCHECK(origin.has_query());
+  auto notification_id = origin.query();
+
+  if (notification_ids_.find(notification_id) == notification_ids_.end())
+    return;
+
+  auto notification_info = base::WrapUnique(
+      notification_ids_[notification_id].release());
+  notification_ids_.erase(notification_id);
+
+  GURL url(notification_info->url);
+
+  Browser* browser = chrome::FindLastActiveWithProfile(profile);
+  NavigateParams nav_params(browser, url, ui::PAGE_TRANSITION_LINK);
+  nav_params.disposition = WindowOpenDisposition::NEW_FOREGROUND_TAB;
+  // TODO(bridiver) - what to put here?
+  // nav_params.referrer = GURL("https://brave.com");
+  nav_params.window_action = NavigateParams::SHOW_WINDOW;
+  Navigate(&nav_params);
 }
 
 const ads::ClientInfo AdsServiceImpl::GetClientInfo() const {

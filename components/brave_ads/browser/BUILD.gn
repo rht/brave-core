@@ -23,6 +23,8 @@ source_set("browser") {
 
   if (brave_ads_enabled) {
     sources += [
+      "ad_notification.cc",
+      "ad_notification.h",
       "ads_service_impl.cc",
       "ads_service_impl.h",
       "bundle_state_database.cc",
@@ -32,6 +34,7 @@ source_set("browser") {
     deps += [
       "//brave/vendor/bat-native-ads",
       "//ui/base",
+      "//ui/message_center/public/cpp",
     ]
   }
 }

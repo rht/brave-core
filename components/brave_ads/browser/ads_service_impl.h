@@ -5,6 +5,7 @@
 #ifndef BRAVE_COMPONENTS_BRAVE_ADS_ADS_SERVICE_IMPL_
 #define BRAVE_COMPONENTS_BRAVE_ADS_ADS_SERVICE_IMPL_
 
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -14,7 +15,9 @@
 #include "base/memory/weak_ptr.h"
 #include "bat/ads/ads_client.h"
 #include "brave/components/brave_ads/browser/ads_service.h"
+#include "chrome/browser/notifications/notification_handler.h"
 
+class NotificationDisplayService;
 class Profile;
 
 namespace ads {
@@ -31,6 +34,7 @@ namespace brave_ads {
 class BundleStateDatabase;
 
 class AdsServiceImpl : public AdsService,
+                       public NotificationHandler,
                        public ads::AdsClient,
                        public base::SupportsWeakPtr<AdsServiceImpl> {
  public:
@@ -39,9 +43,17 @@ class AdsServiceImpl : public AdsService,
 
   bool is_enabled() const override;
 
+  // NotificationHandler implementation
+  void OnShow(Profile* profile, const std::string& notification_id) override;
+  void OnClose(Profile* profile,
+               const GURL& origin,
+               const std::string& notification_id,
+               bool by_user,
+               base::OnceClosure completed_closure) override;
+  void OpenSettings(Profile* profile, const GURL& origin) override;
+
  private:
   void Init();
-
 
   // AdsClient implementation
   bool IsAdsEnabled() const override;
@@ -53,7 +65,7 @@ class AdsServiceImpl : public AdsService,
   const std::string GenerateUUID() const override;
   const std::string GetSSID() const override;
   void ShowNotification(
-      const std::unique_ptr<ads::NotificationInfo> info) override {}
+      std::unique_ptr<const ads::NotificationInfo> info) override;
   uint32_t SetTimer(const uint64_t& time_offset) override;
   void KillTimer(uint32_t timer_id) override;
   std::unique_ptr<ads::URLSession> URLSessionTask(
@@ -95,16 +107,18 @@ class AdsServiceImpl : public AdsService,
                 const std::string& value);
   void OnTimer(uint32_t timer_id);
 
-
   Profile* profile_;  // NOT OWNED
   const scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
   const base::FilePath base_path_;
-
   std::map<uint32_t, std::unique_ptr<base::OneShotTimer>> timers_;
   uint32_t next_timer_id_;
   std::unique_ptr<BundleStateDatabase> bundle_state_backend_;
+  NotificationDisplayService* display_service_;  // NOT OWNED
 
   std::unique_ptr<ads::Ads> ads_;
+
+  std::map<std::string, std::unique_ptr<const ads::NotificationInfo>>
+      notification_ids_;
 
   DISALLOW_COPY_AND_ASSIGN(AdsServiceImpl);
 };

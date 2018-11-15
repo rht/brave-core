@@ -6,6 +6,7 @@
 
 #include "brave/components/brave_ads/browser/buildflags/buildflags.h"
 #include "brave/components/brave_ads/browser/ads_service.h"
+#include "chrome/browser/notifications/notification_display_service_factory.h"
 #include "chrome/browser/profiles/incognito_helpers.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -35,6 +36,7 @@ AdsServiceFactory::AdsServiceFactory()
     : BrowserContextKeyedServiceFactory(
           "AdsService",
           BrowserContextDependencyManager::GetInstance()) {
+  DependsOn(NotificationDisplayServiceFactory::GetInstance());
 }
 
 AdsServiceFactory::~AdsServiceFactory() {
