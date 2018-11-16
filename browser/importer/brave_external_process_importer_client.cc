@@ -53,4 +53,12 @@ void BraveExternalProcessImporterClient::OnStatsImportReady(
   bridge_->UpdateStats(stats);
 }
 
+void BraveExternalProcessImporterClient::OnReferralImportReady(
+    const BraveReferral& referral) {
+  if (cancelled_)
+    return;
+
+  bridge_->UpdateReferral(referral);
+}
+
 BraveExternalProcessImporterClient::~BraveExternalProcessImporterClient() {}

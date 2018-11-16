@@ -30,6 +30,8 @@ class BraveExternalProcessImporterClient : public ExternalProcessImporterClient 
       const std::vector<net::CanonicalCookie>& cookies_group) override;
   void OnStatsImportReady(
        const BraveStats& stats) override;
+  void OnReferralImportReady(
+       const BraveReferral& referral) override;
 
  private:
   ~BraveExternalProcessImporterClient() override;

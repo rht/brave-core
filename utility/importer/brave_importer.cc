@@ -14,6 +14,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "brave/common/importer/brave_stats.h"
+#include "brave/common/importer/brave_referral.h"
 #include "chrome/common/importer/importer_bridge.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/autofill/core/common/password_form.h"
@@ -60,6 +61,8 @@ void BraveImporter::StartImport(const importer::SourceProfile& source_profile,
 
   // The order here is important!
   bridge_->NotifyStarted();
+
+  ImportReferral();
 
   if ((items & importer::HISTORY) && !cancelled()) {
     bridge_->NotifyItemStarted(importer::HISTORY);
@@ -314,4 +317,55 @@ void BraveImporter::ImportStats() {
   }
 
   bridge_->UpdateStats(stats);
+}
+
+bool TryFindStringKey(const base::Value* dict, const std::string key, std::string& value_to_set) {
+  auto* value_read = dict->FindKeyOfType(key, base::Value::Type::STRING);
+  if (value_read) {
+    value_to_set = value_read->GetString();
+    return true;
+  }
+  return false;
+}
+
+bool TryFindIntKey(const base::Value* dict, const std::string key, int& value_to_set) {
+  auto* value_read = dict->FindKeyOfType(key, base::Value::Type::INTEGER);
+  if (value_read) {
+    value_to_set = value_read->GetInt();
+    return true;
+  }
+  return false;
+}
+
+bool TryFindUInt64Key(const base::Value* dict, const std::string key, uint64_t& value_to_set) {
+  auto* value_read = dict->FindKeyOfType(key, base::Value::Type::DOUBLE);
+  if (value_read) {
+    value_to_set = (uint64_t)value_read->GetDouble();
+    return true;
+  }
+  return false;
+}
+
+void BraveImporter::ImportReferral() {
+  std::unique_ptr<base::Value> session_store_json = ParseBraveSessionStore();
+  if (!session_store_json) {
+    return;
+  }
+
+  const base::Value* updates = session_store_json->FindKeyOfType(
+    "updates",
+    base::Value::Type::DICTIONARY);
+  if (!updates) {
+    LOG(ERROR) << "No entry \"updates\" found in session-store-1";
+    return;
+  }
+
+  BraveReferral referral;
+
+  TryFindStringKey(updates, "promoCode", referral.promo_code);
+  TryFindStringKey(updates, "referralDownloadId", referral.download_id);
+  TryFindUInt64Key(updates, "referralTimestamp", referral.finalize_timestamp);
+  TryFindStringKey(updates, "weekOfInstallation", referral.week_of_installation);
+
+  bridge_->UpdateReferral(referral);
 }

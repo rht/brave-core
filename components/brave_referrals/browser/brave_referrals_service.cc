@@ -592,6 +592,7 @@ std::unique_ptr<BraveReferralsService> BraveReferralsServiceFactory(PrefService*
 }
 
 void RegisterPrefsForBraveReferralsService(PrefRegistrySimple* registry) {
+  LOG(ERROR) << "BSC]] RegisterPrefsForBraveReferralsService";
   registry->RegisterBooleanPref(kReferralCheckedForPromoCodeFile, false);
   registry->RegisterStringPref(kReferralPromoCode, std::string());
   registry->RegisterStringPref(kReferralDownloadID, std::string());
