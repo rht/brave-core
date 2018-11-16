@@ -3,7 +3,6 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "brave/browser/importer/brave_profile_writer.h"
-#include "brave/common/importer/brave_ledger.h"
 #include "brave/common/importer/brave_stats.h"
 #include "brave/common/pref_names.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
@@ -74,6 +73,18 @@ void BraveProfileWriter::SetBridge(BraveInProcessImporterBridge* bridge) {
   bridge_ptr_ = bridge;
 }
 
+void BraveProfileWriter::OnWalletInitialized(brave_rewards::RewardsService* rewards_service, int error_code) {
+  if (error_code) {
+    // Cancel the import if wallet creation failed
+    LOG(ERROR) << "An error occurred while trying to create a wallet to restore into (error_code=" << error_code << ")";
+    bridge_ptr_->Cancel();
+    return;
+  }
+
+  LOG(INFO) << "Wallet creation successful\nStarting wallet recovery...";
+  rewards_service->RecoverWallet(ledger_.passphrase);
+}
+
 void BraveProfileWriter::OnRecoverWallet(
     brave_rewards::RewardsService* rewards_service,
     unsigned int result,
@@ -89,7 +100,7 @@ void BraveProfileWriter::OnRecoverWallet(
   }
 
   LOG(INFO) << "Wallet restore successful";
-  rewards_service_->SetContributionAmount(new_contribution_amount_);
+  SetWalletProperties(rewards_service);
 
   // Set the pinned item count (rewards can detect and take action)
   PrefService* prefs = profile_->GetOriginalProfile()->GetPrefs();
@@ -99,56 +110,39 @@ void BraveProfileWriter::OnRecoverWallet(
   bridge_ptr_->FinishLedgerImport();
 }
 
-void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
-  rewards_service_ =
-      brave_rewards::RewardsServiceFactory::GetForProfile(profile_);
-  if (!rewards_service_) {
-    LOG(ERROR) << "Failed to get RewardsService for profile.";
-    bridge_ptr_->Cancel();
-    return;
-  }
-
-  // Avoid overwriting Brave Rewards wallet if one already exists.
-  if (!ledger.clobber_wallet && rewards_service_->IsWalletCreated()) {
-    LOG(ERROR) << "Brave Rewards wallet already exists; skipping Brave Payments import.";
-    bridge_ptr_->Cancel();
-    return;
-  }
-
-  rewards_service_->AddObserver(this);
-
+void BraveProfileWriter::SetWalletProperties(brave_rewards::RewardsService* rewards_service) {
   // Set the preferences read from session-store-1
-  auto* payments = &ledger.settings.payments;
-  rewards_service_->SetPublisherAllowVideos(payments->allow_media_publishers);
-  rewards_service_->SetPublisherAllowNonVerified(payments->allow_non_verified);
-  rewards_service_->SetPublisherMinVisitTime(payments->min_visit_time);
-  rewards_service_->SetPublisherMinVisits(payments->min_visits);
+  auto* payments = &ledger_.settings.payments;
+  rewards_service->SetPublisherAllowVideos(payments->allow_media_publishers);
+  rewards_service->SetPublisherAllowNonVerified(payments->allow_non_verified);
+  rewards_service->SetPublisherMinVisitTime(payments->min_visit_time);
+  rewards_service->SetPublisherMinVisits(payments->min_visits);
 
   // Set the excluded sites
-  for (const auto& publisher_key : ledger.excluded_publishers) {
-    rewards_service_->ExcludePublisher(publisher_key);
+  for (const auto& publisher_key : ledger_.excluded_publishers) {
+    rewards_service->ExcludePublisher(publisher_key);
   }
 
   // Set the recurring tips (formerly known as pinned sites)
   int sum_of_monthly_tips = 0;
   pinned_item_count_ = 0;
-  for (const auto& item : ledger.pinned_publishers) {
+  for (const auto& item : ledger_.pinned_publishers) {
     const auto& publisher_key = item.first;
     const auto& pin_percentage = item.second;
     // NOTE: this will truncate (ex: 0.90 would be 0, not 1)
     const int amount_in_bat = (int)((pin_percentage / 100.0) *
-      ledger.settings.payments.contribution_amount);
+      ledger_.settings.payments.contribution_amount);
     if (amount_in_bat > 0) {
       pinned_item_count_++;
       sum_of_monthly_tips += amount_in_bat;
-      rewards_service_->OnDonate(publisher_key, amount_in_bat, true);
+      rewards_service->OnDonate(publisher_key, amount_in_bat, true);
     }
   }
 
   // Adjust monthly contribution budget
   // Some may have been allocated for recurring tips
   bool auto_contribute_enabled = payments->enabled;
-  const int minimum_monthly_contribution = 15;
+  const int minimum_monthly_contribution = 10;
   new_contribution_amount_ = payments->contribution_amount;
   if (sum_of_monthly_tips > 0) {
     new_contribution_amount_ -= sum_of_monthly_tips;
@@ -163,9 +157,39 @@ void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
       new_contribution_amount_ = minimum_monthly_contribution;
     }
   }
-  rewards_service_->SetContributionAmount(new_contribution_amount_);
-  rewards_service_->SetAutoContribute(auto_contribute_enabled);
+  rewards_service->SetUserChangedContribution();
+  rewards_service->SetContributionAmount(new_contribution_amount_);
+  rewards_service->SetAutoContribute(auto_contribute_enabled);
+}
 
+void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
+  rewards_service_ =
+      brave_rewards::RewardsServiceFactory::GetForProfile(profile_);
+  if (!rewards_service_) {
+    LOG(ERROR) << "Failed to get RewardsService for profile.";
+    bridge_ptr_->Cancel();
+    return;
+  }
+
+  ledger_ = BraveLedger(ledger);
+
+  // If a wallet doesn't exist, we need to create one (in order to call RecoverWallet)
+  if (!rewards_service_->IsWalletCreated()) {
+    rewards_service_->AddObserver(this);
+    LOG(INFO) << "Creating wallet to use for import...";
+    rewards_service_->CreateWallet();
+    return;
+  }
+
+  // Avoid overwriting Brave Rewards wallet if it existed BEFORE import happened
+  if (!ledger_.clobber_wallet) {
+    LOG(ERROR) << "Brave Rewards wallet existed before import; skipping Brave Payments import.";
+    bridge_ptr_->Cancel();
+    return;
+  }
+
+  // Set properties and recover the wallet
+  rewards_service_->AddObserver(this);
   LOG(INFO) << "Starting wallet recovery...";
-  rewards_service_->RecoverWallet(ledger.passphrase);
+  rewards_service_->RecoverWallet(ledger_.passphrase);
 }

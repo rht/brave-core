@@ -387,12 +387,23 @@ bool ParsePaymentsPreferences(BraveLedger& ledger, const base::Value& session_st
   TryFindBoolKey(settings, "payments.allow-non-verified-publishers", payments->allow_non_verified);
   TryFindBoolKey(settings, "payments.allow-media-publishers", payments->allow_media_publishers);
 
+  // TODO: get default amount from rewards service
+  const int default_monthly_contribution = 20;
   std::string contribution_amount = "";
+  payments->contribution_amount = -1;
   TryFindStringKey(settings, "payments.contribution-amount", contribution_amount);
   if (!contribution_amount.empty()) {
     if (!base::StringToDouble(contribution_amount, &payments->contribution_amount)) {
       LOG(ERROR) << "StringToDouble failed when converting \"settings.payments.contribution-amount\"; unable to convert value \"" << contribution_amount << "\"; defaulting value.";
     }
+  }
+
+  // Fall back to default value if contribution amount is missing or out of range.
+  // If user never modified (using the UI) the contribution amount, it won't
+  // be present in the session-store-1. This was intended so that we can change
+  // the default amount. Once user changes it, value was then locked in.
+  if (payments->contribution_amount < 1 || payments->contribution_amount > 500) {
+    payments->contribution_amount = default_monthly_contribution;
   }
 
   std::string minimum_visits = "";
@@ -402,15 +413,11 @@ bool ParsePaymentsPreferences(BraveLedger& ledger, const base::Value& session_st
       LOG(ERROR) << "StringToUint failed when converting \"settings.payments.minimum-visits\"; unable to convert value \"" << minimum_visits << "\"; defaulting value.";
     }
   }
-  switch (payments->min_visits) {
-    // allowed values
-    case 1:
-    case 5:
-    case 10:
-    break;
 
-    default:
-      payments->min_visits = 1u;
+  if (payments->min_visits != 1 &&
+      payments->min_visits != 5 &&
+      payments->min_visits != 10) {
+    payments->min_visits = 1u;
   }
 
   std::string minumum_visit_time = "";
@@ -422,9 +429,11 @@ bool ParsePaymentsPreferences(BraveLedger& ledger, const base::Value& session_st
   }
   switch (payments->min_visit_time) {
     // allowed values
-    case 5000: payments->min_visit_time = 5; break;
-    case 8000: payments->min_visit_time = 8; break;
-    case 60000: payments->min_visit_time = 60; break;
+    case 5000:
+    case 8000:
+    case 60000:
+      payments->min_visit_time /= 1000;
+      break;
 
     default:
       payments->min_visit_time = braveledger_ledger::_default_min_publisher_duration;
