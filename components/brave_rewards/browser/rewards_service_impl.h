@@ -120,6 +120,7 @@ class RewardsServiceImpl : public RewardsService,
   void SetContributionAutoInclude(
     std::string publisher_key, bool excluded, uint64_t windowId) override;
   RewardsNotificationService* GetNotificationService() const override;
+  double GetDefaultContributionAmount();
 
  private:
   friend void RunIOTaskCallback(

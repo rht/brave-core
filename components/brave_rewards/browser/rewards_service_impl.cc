@@ -941,6 +941,7 @@ void RewardsServiceImpl::TriggerOnWalletProperties(int error_code,
       wallet_properties->parameters_choices = wallet_info->parameters_choices_;
       wallet_properties->parameters_range = wallet_info->parameters_range_;
       wallet_properties->parameters_days = wallet_info->parameters_days_;
+      wallet_properties->montly_amount = wallet_info->fee_amount_;
 
       for (size_t i = 0; i < wallet_info->grants_.size(); i ++) {
         brave_rewards::Grant grant;
@@ -1596,6 +1597,10 @@ void RewardsServiceImpl::Log(ledger::LogLevel level, const std::string& text) {
   }
 
   VLOG(level) << text;
+}
+
+double RewardsServiceImpl::GetDefaultContributionAmount() {
+  return ledger_->GetDefaultContributionAmount();
 }
 
 }  // namespace brave_rewards
