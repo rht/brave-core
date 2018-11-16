@@ -9,6 +9,9 @@
 #include "components/prefs/pref_member.h"
 #include "components/search_engines/template_url_service_observer.h"
 
+// The purpose of this service for tor is making user changed search engine
+// provider persist across the sessions.
+// Also, BraveProfileManager::SetNonPersonalProfilePrefs() overrides for it.
 class TorWindowSearchEngineProviderService
     : public SearchEngineProviderService,
       public TemplateURLServiceObserver {

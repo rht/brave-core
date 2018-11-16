@@ -4,7 +4,7 @@
 
 #include "brave/browser/search_engines/tor_window_search_engine_provider_service.h"
 
-#include "brave/browser/search_engine_provider_util.h"
+#include "brave/browser/search_engines/search_engine_provider_util.h"
 #include "brave/common/pref_names.h"
 #include "brave/components/search_engines/brave_prepopulated_engines.h"
 #include "chrome/browser/profiles/profile.h"

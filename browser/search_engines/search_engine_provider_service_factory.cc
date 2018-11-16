@@ -4,9 +4,9 @@
 
 #include "brave/browser/search_engines/search_engine_provider_service_factory.h"
 
-#include "brave/browser/search_engine_provider_util.h"
 #include "brave/browser/search_engines/guest_window_search_engine_provider_service.h"
 #include "brave/browser/search_engines/private_window_search_engine_provider_service.h"
+#include "brave/browser/search_engines/search_engine_provider_util.h"
 #include "brave/browser/search_engines/tor_window_search_engine_provider_service.h"
 #include "chrome/browser/profiles/incognito_helpers.h"
 #include "chrome/browser/profiles/profile.h"
@@ -44,7 +44,8 @@ KeyedService* InitializeSearchEngineProviderServiceIfNeeded(Profile* profile) {
 
   return nullptr;
 }
-}
+
+}  // namespace
 
 // static
 SearchEngineProviderServiceFactory*
@@ -79,5 +80,7 @@ bool SearchEngineProviderServiceFactory::ServiceIsNULLWhileTesting() const {
 
 bool
 SearchEngineProviderServiceFactory::ServiceIsCreatedWithBrowserContext() const {
+  // Service should be initialized when profile is created to set proper
+  // provider to TemplateURLService.
   return true;
 }

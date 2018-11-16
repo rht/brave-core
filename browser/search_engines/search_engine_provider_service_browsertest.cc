@@ -4,7 +4,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "brave/browser/profiles/brave_profile_manager.h"
-#include "brave/browser/search_engine_provider_util.h"
+#include "brave/browser/search_engines/search_engine_provider_util.h"
 #include "brave/browser/tor/tor_launcher_factory.h"
 #include "brave/browser/ui/browser_commands.h"
 #include "brave/components/search_engines/brave_prepopulated_engines.h"
