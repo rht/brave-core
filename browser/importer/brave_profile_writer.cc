@@ -77,6 +77,7 @@ void BraveProfileWriter::SetBridge(BraveInProcessImporterBridge* bridge) {
 void BraveProfileWriter::OnWalletInitialized(brave_rewards::RewardsService*
   rewards_service, int error_code) {
   if (error_code) {
+    rewards_service_->RemoveObserver(this);
     // Cancel the import if wallet creation failed
     LOG(ERROR) << "An error occurred while trying to create a wallet to "
       << "restore into (error_code=" << error_code << ")";
@@ -98,8 +99,9 @@ void BraveProfileWriter::OnWalletProperties(
   // - caller didn't pass `true` for clobber_wallet
   if (properties->balance > 0 && !ledger_.clobber_wallet) {
     rewards_service_->RemoveObserver(this);
-    LOG(ERROR) << "Brave Rewards wallet existed before import; "
-      << "skipping Brave Payments import.";
+    LOG(ERROR) << "Brave Rewards wallet existed before import and "
+      << "has a balance of " << properties->balance << "; skipping "
+      << "Brave Payments import.";
     bridge_ptr_->Cancel();
     return;
   }
@@ -134,7 +136,7 @@ void BraveProfileWriter::OnRecoverWallet(
 
   // Set the pinned item count (rewards can detect and take action)
   PrefService* prefs = profile_->GetOriginalProfile()->GetPrefs();
-  prefs->SetUint64(kBravePaymentsPinnedItemCount, pinned_item_count_);
+  prefs->SetInteger(kBravePaymentsPinnedItemCount, pinned_item_count_);
 
   // Notify the caller that import is complete
   bridge_ptr_->FinishLedgerImport();
