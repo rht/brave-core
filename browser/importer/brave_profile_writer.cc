@@ -73,10 +73,12 @@ void BraveProfileWriter::SetBridge(BraveInProcessImporterBridge* bridge) {
   bridge_ptr_ = bridge;
 }
 
-void BraveProfileWriter::OnWalletInitialized(brave_rewards::RewardsService* rewards_service, int error_code) {
+void BraveProfileWriter::OnWalletInitialized(brave_rewards::RewardsService*
+  rewards_service, int error_code) {
   if (error_code) {
     // Cancel the import if wallet creation failed
-    LOG(ERROR) << "An error occurred while trying to create a wallet to restore into (error_code=" << error_code << ")";
+    LOG(ERROR) << "An error occurred while trying to create a wallet to "
+      << "restore into (error_code=" << error_code << ")";
     bridge_ptr_->Cancel();
     return;
   }
@@ -94,7 +96,8 @@ void BraveProfileWriter::OnRecoverWallet(
 
   if (result) {
     // Cancel the import if wallet restore failed
-    LOG(ERROR) << "An error occurred while trying to restore the wallet (result=" << result << ")";
+    LOG(ERROR) << "An error occurred while trying to restore the wallet "
+      << "(result=" << result << ")";
     bridge_ptr_->Cancel();
     return;
   }
@@ -110,7 +113,8 @@ void BraveProfileWriter::OnRecoverWallet(
   bridge_ptr_->FinishLedgerImport();
 }
 
-void BraveProfileWriter::SetWalletProperties(brave_rewards::RewardsService* rewards_service) {
+void BraveProfileWriter::SetWalletProperties(brave_rewards::RewardsService*
+  rewards_service) {
   // Set the preferences read from session-store-1
   auto* payments = &ledger_.settings.payments;
   rewards_service->SetPublisherAllowVideos(payments->allow_media_publishers);
@@ -149,8 +153,9 @@ void BraveProfileWriter::SetWalletProperties(brave_rewards::RewardsService* rewa
     // If left over budget is too low, turn off auto-contribute
     if (new_contribution_amount_ < minimum_monthly_contribution) {
       LOG(INFO) << "Setting auto-contribute to false.\n"
-        << "Recurring contributions take up " << sum_of_monthly_tips << " of the monthly "
-        << payments->contribution_amount << " budget.\nThis leaves " << new_contribution_amount_
+        << "Recurring contributions take up " << sum_of_monthly_tips
+        << " of the monthly " << payments->contribution_amount
+        << " budget.\nThis leaves " << new_contribution_amount_
         << " which is less than the minimum monthly auto-contribute amount ("
         << minimum_monthly_contribution << ").";
       auto_contribute_enabled = false;
@@ -173,7 +178,7 @@ void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
 
   ledger_ = BraveLedger(ledger);
 
-  // If a wallet doesn't exist, we need to create one (in order to call RecoverWallet)
+  // If a wallet doesn't exist, we need to create one (needed for RecoverWallet)
   if (!rewards_service_->IsWalletCreated()) {
     rewards_service_->AddObserver(this);
     LOG(INFO) << "Creating wallet to use for import...";
@@ -183,7 +188,8 @@ void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
 
   // Avoid overwriting Brave Rewards wallet if it existed BEFORE import happened
   if (!ledger_.clobber_wallet) {
-    LOG(ERROR) << "Brave Rewards wallet existed before import; skipping Brave Payments import.";
+    LOG(ERROR) << "Brave Rewards wallet existed before import; "
+      << "skipping Brave Payments import.";
     bridge_ptr_->Cancel();
     return;
   }
