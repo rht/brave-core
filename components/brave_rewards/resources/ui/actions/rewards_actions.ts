@@ -127,3 +127,9 @@ export const onCurrentTips = (list: Rewards.Publisher[]) => action(types.ON_CURR
 export const getDonationTable = () => action(types.GET_DONATION_TABLE)
 
 export const getContributeList = () => action(types.GET_CONTRIBUTE_LIST)
+
+export const checkImported = () => action(types.CHECK_IMPORTED)
+
+export const onImportedCheck = (imported: boolean) => action(types.ON_IMPORTED_CHECK, {
+  imported
+})
