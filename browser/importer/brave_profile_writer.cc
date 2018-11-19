@@ -7,6 +7,7 @@
 #include "brave/common/pref_names.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
 #include "brave/components/brave_rewards/browser/rewards_service_factory.h"
+#include "brave/components/brave_rewards/browser/wallet_properties.h"
 #include "brave/utility/importer/brave_importer.h"
 #include "brave/browser/importer/brave_in_process_importer_bridge.h"
 
@@ -84,6 +85,31 @@ void BraveProfileWriter::OnWalletInitialized(brave_rewards::RewardsService*
   }
 
   LOG(INFO) << "Wallet creation successful\nStarting wallet recovery...";
+  rewards_service->RecoverWallet(ledger_.passphrase);
+}
+
+void BraveProfileWriter::OnWalletProperties(
+  brave_rewards::RewardsService* rewards_service,
+  int error_code,
+  brave_rewards::WalletProperties* properties) {
+  // Avoid overwriting Brave Rewards wallet if:
+  // - it existed BEFORE import happened
+  // - it has a non-zero balance
+  // - caller didn't pass `true` for clobber_wallet
+  if (properties->balance > 0 && !ledger_.clobber_wallet) {
+    LOG(ERROR) << "Brave Rewards wallet existed before import; "
+      << "skipping Brave Payments import.";
+    bridge_ptr_->Cancel();
+    return;
+  }
+
+  // TODO: backup if needed?
+  // export the passphrase / seed to a file in profile directory?
+  // ...
+  // see https://github.com/brave/brave-core/pull/736/files#discussion_r234764823
+
+  LOG(INFO) << "Existing wallet has a balance of " << properties->balance
+  << "\nRecovering imported wallet on top of this...";
   rewards_service->RecoverWallet(ledger_.passphrase);
 }
 
@@ -186,16 +212,6 @@ void BraveProfileWriter::UpdateLedger(const BraveLedger& ledger) {
     return;
   }
 
-  // Avoid overwriting Brave Rewards wallet if it existed BEFORE import happened
-  if (!ledger_.clobber_wallet) {
-    LOG(ERROR) << "Brave Rewards wallet existed before import; "
-      << "skipping Brave Payments import.";
-    bridge_ptr_->Cancel();
-    return;
-  }
-
-  // Set properties and recover the wallet
   rewards_service_->AddObserver(this);
-  LOG(INFO) << "Starting wallet recovery...";
-  rewards_service_->RecoverWallet(ledger_.passphrase);
+  rewards_service_->FetchWalletProperties();
 }
