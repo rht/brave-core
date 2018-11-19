@@ -97,6 +97,7 @@ void BraveProfileWriter::OnWalletProperties(
   // - it has a non-zero balance
   // - caller didn't pass `true` for clobber_wallet
   if (properties->balance > 0 && !ledger_.clobber_wallet) {
+    rewards_service_->RemoveObserver(this);
     LOG(ERROR) << "Brave Rewards wallet existed before import; "
       << "skipping Brave Payments import.";
     bridge_ptr_->Cancel();
