@@ -155,15 +155,24 @@ bool SaveMediaPublisherInfoOnFileTaskRunner(
 }
 
 std::unique_ptr<ledger::PublisherInfo>
-LoadMediaPublisherInfoListOnFileTaskRunner(
+LoadPublisherInfoOnFileTaskRunner(
+    const std::string publisher_key,
+    PublisherInfoDatabase* backend) {
+  if (!backend)
+    return nullptr;
+
+  return backend->GetPublisherInfo(publisher_key);
+}
+
+std::unique_ptr<ledger::PublisherInfo>
+LoadMediaPublisherInfoOnFileTaskRunner(
     const std::string media_key,
     PublisherInfoDatabase* backend) {
   std::unique_ptr<ledger::PublisherInfo> info;
   if (!backend)
     return info;
 
-  info = backend->GetMediaPublisherInfo(media_key);
-  return info;
+  return backend->GetMediaPublisherInfo(media_key);
 }
 
 bool SavePublisherInfoOnFileTaskRunner(
@@ -452,11 +461,33 @@ void RewardsServiceImpl::OnXHRLoad(SessionID tab_id,
                      data);
 }
 
+void RewardsServiceImpl::LoadPublisherInfo(
+    const std::string& publisher_key,
+    ledger::PublisherInfoCallback callback) {
+  base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
+      base::Bind(&LoadPublisherInfoOnFileTaskRunner,
+          publisher_key, publisher_info_backend_.get()),
+      base::Bind(&RewardsServiceImpl::OnPublisherInfoLoaded,
+                     AsWeakPtr(),
+                     callback));
+}
+
+void RewardsServiceImpl::OnPublisherInfoLoaded(
+    ledger::PublisherInfoCallback callback,
+    std::unique_ptr<ledger::PublisherInfo> info) {
+  if (!info) {
+    callback(ledger::Result::NOT_FOUND, nullptr);
+    return;
+  }
+
+  callback(ledger::Result::LEDGER_OK, std::move(info));
+}
+
 void RewardsServiceImpl::LoadMediaPublisherInfo(
     const std::string& media_key,
     ledger::PublisherInfoCallback callback) {
   base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
-      base::Bind(&LoadMediaPublisherInfoListOnFileTaskRunner,
+      base::Bind(&LoadMediaPublisherInfoOnFileTaskRunner,
           media_key, publisher_info_backend_.get()),
       base::Bind(&RewardsServiceImpl::OnMediaPublisherInfoLoaded,
                      AsWeakPtr(),
@@ -467,7 +498,7 @@ void RewardsServiceImpl::OnMediaPublisherInfoLoaded(
     ledger::PublisherInfoCallback callback,
     std::unique_ptr<ledger::PublisherInfo> info) {
   if (!info) {
-    callback(ledger::Result::NOT_FOUND, std::move(info));
+    callback(ledger::Result::NOT_FOUND, nullptr);
     return;
   }
 
@@ -736,7 +767,7 @@ void RewardsServiceImpl::OnPublisherInfoSaved(
   TriggerOnContentSiteUpdated();
 }
 
-void RewardsServiceImpl::LoadPublisherInfo(
+void RewardsServiceImpl::LoadActivityInfo(
     ledger::PublisherInfoFilter filter,
     ledger::PublisherInfoCallback callback) {
   base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
@@ -744,12 +775,12 @@ void RewardsServiceImpl::LoadPublisherInfo(
           // set limit to 2 to make sure there is
           // only 1 valid result for the filter
           0, 2, filter, publisher_info_backend_.get()),
-      base::Bind(&RewardsServiceImpl::OnPublisherInfoLoaded,
+      base::Bind(&RewardsServiceImpl::OnActivityInfoLoaded,
                      AsWeakPtr(),
                      callback));
 }
 
-void RewardsServiceImpl::OnPublisherInfoLoaded(
+void RewardsServiceImpl::OnActivityInfoLoaded(
     ledger::PublisherInfoCallback callback,
     const ledger::PublisherInfoList list) {
   if (list.size() == 0) {
