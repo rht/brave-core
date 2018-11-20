@@ -188,6 +188,8 @@ class RewardsServiceImpl : public RewardsService,
       ledger::Result result,
       std::unique_ptr<ledger::PublisherInfo> info,
       uint64_t windowId);
+  void OnRestorePublishersInternal(ledger::OnRestoreCallback callback,
+                                   bool result);
 
   // ledger::LedgerClient
   std::string GenerateGUID() const override;
@@ -272,6 +274,7 @@ class RewardsServiceImpl : public RewardsService,
                             const ledger::REWARDS_CATEGORY category) override;
   void GetRecurringDonations(ledger::PublisherInfoListCallback callback) override;
   void Log(ledger::LogLevel level, const std::string& text) override;
+  void OnRestorePublishers(ledger::OnRestoreCallback callback) override;
 
   void OnIOTaskComplete(std::function<void(void)> callback);
 
