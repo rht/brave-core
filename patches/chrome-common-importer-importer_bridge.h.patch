@@ -1,8 +1,8 @@
 diff --git a/chrome/common/importer/importer_bridge.h b/chrome/common/importer/importer_bridge.h
-index b4250c91d1b83ea920b3de9cd6b1a7929b30ffc5..7a4af36c97e31e64192e95a29600bc7685ead908 100644
+index b4250c91d1b83ea920b3de9cd6b1a7929b30ffc5..fff08454e044195b2ab9d762102a6c26b7c98858 100644
 --- a/chrome/common/importer/importer_bridge.h
 +++ b/chrome/common/importer/importer_bridge.h
-@@ -15,10 +15,13 @@
+@@ -15,6 +15,7 @@
  #include "chrome/common/importer/importer_data_types.h"
  #include "chrome/common/importer/importer_url_row.h"
  #include "components/favicon_base/favicon_usage_data.h"
@@ -10,13 +10,7 @@ index b4250c91d1b83ea920b3de9cd6b1a7929b30ffc5..7a4af36c97e31e64192e95a29600bc76
  
  class GURL;
  struct ImportedBookmarkEntry;
- struct ImporterAutofillFormDataEntry;
-+struct BraveStats;
-+struct BraveReferral;
- 
- namespace autofill {
- struct PasswordForm;
-@@ -58,6 +61,15 @@ class ImporterBridge : public base::RefCountedThreadSafe<ImporterBridge> {
+@@ -58,6 +59,15 @@ class ImporterBridge : public base::RefCountedThreadSafe<ImporterBridge> {
    virtual void SetAutofillFormData(
        const std::vector<ImporterAutofillFormDataEntry>& entries) = 0;
  

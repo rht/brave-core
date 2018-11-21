@@ -70,6 +70,7 @@ void BraveProfileWriter::UpdateReferral(const BraveReferral& referral) {
   PrefService* local_state = g_browser_process->local_state();
   if (!local_state) {
     LOG(ERROR) << "Unable to get local_state! (needed to set referral info)";
+    return;
   }
 
   if (!referral.week_of_installation.empty()) {
@@ -95,7 +96,7 @@ void BraveProfileWriter::UpdateReferral(const BraveReferral& referral) {
     local_state->ClearPref(kReferralDownloadID);
   }
 
-  if(referral.finalize_timestamp > 0) {
+  if (referral.finalize_timestamp > 0) {
     LOG(INFO) << "Setting kReferralTimestamp to "
       << "\"" << referral.finalize_timestamp << "\"";
     local_state->SetTime(kReferralTimestamp,

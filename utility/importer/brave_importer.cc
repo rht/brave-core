@@ -62,6 +62,8 @@ void BraveImporter::StartImport(const importer::SourceProfile& source_profile,
   // The order here is important!
   bridge_->NotifyStarted();
 
+  // NOTE: Referrals are always imported (not configurable by user)
+  // If referral data isn't found, those settings are then cleared.
   ImportReferral();
 
   if ((items & importer::HISTORY) && !cancelled()) {
@@ -362,10 +364,26 @@ void BraveImporter::ImportReferral() {
 
   BraveReferral referral;
 
-  TryFindStringKey(updates, "promoCode", referral.promo_code);
-  TryFindStringKey(updates, "referralDownloadId", referral.download_id);
-  TryFindUInt64Key(updates, "referralTimestamp", referral.finalize_timestamp);
-  TryFindStringKey(updates, "weekOfInstallation", referral.week_of_installation);
+  // Read as many values as possible (defaulting to "" or 0)
+  // After 90 days, the `promoCode` field is erased (so it's not
+  // always there). `referralTimestamp` is only present after those
+  // 90 days elapse. Week of installation should always be present
+  // but if missing, it shouldn't cancel the import.
+  if (!TryFindStringKey(updates, "promoCode", referral.promo_code)) {
+    referral.promo_code = "";
+  }
+
+  if (!TryFindStringKey(updates, "referralDownloadId", referral.download_id)) {
+    referral.download_id = "";
+  }
+
+  if (!TryFindUInt64Key(updates, "referralTimestamp", referral.finalize_timestamp)) {
+    referral.finalize_timestamp = 0;
+  }
+
+  if (!TryFindStringKey(updates, "weekOfInstallation", referral.week_of_installation)) {
+    referral.week_of_installation = "";
+  }
 
   bridge_->UpdateReferral(referral);
 }
