@@ -143,6 +143,7 @@ class AdsServiceImpl : public AdsService,
   void OnLoaded(const ads::OnLoadCallback& callback,
                 const std::string& value);
   void OnSaved(const ads::OnSaveCallback& callback, bool success);
+  void OnReset(const ads::OnResetCallback& callback, bool success);
   void OnTimer(uint32_t timer_id);
   void OnPrefsChanged(const std::string& pref);
 

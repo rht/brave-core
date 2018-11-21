@@ -85,28 +85,31 @@ class AdsNotificationHandler : public NotificationHandler {
 
 namespace {
 
+static std::map<std::string, int> g_schema_resource_ids = {
+  {"catalog-schema.json", IDR_ADS_CATALOG_SCHEMA},
+  {"bundle-schema.json", IDR_ADS_BUNDLE_SCHEMA},
+};
+
 int GetSchemaResourceId(const std::string& name) {
-  if (name == "catalog-schema.json") {
-    return IDR_ADS_CATALOG_SCHEMA;
-  } else if (name == "bundle-schema.json") {
-    return IDR_ADS_BUNDLE_SCHEMA;
-  } else {
-    NOTREACHED();
-    return 0;
-  }
+  if (g_schema_resource_ids.find(name) != g_schema_resource_ids.end())
+    return g_schema_resource_ids[name];
+
+  NOTREACHED();
+  return 0;
 }
 
+static std::map<std::string, int> g_user_model_resource_ids = {
+  {"de", IDR_ADS_USER_MODEL_DE},
+  {"fr", IDR_ADS_USER_MODEL_FR},
+  {"en", IDR_ADS_USER_MODEL_EN},
+};
+
 int GetUserModelResourceId(const std::string& locale) {
-  if (locale == "de") {
-    return IDR_ADS_USER_MODEL_DE;
-  } else if (locale == "fr") {
-    return IDR_ADS_USER_MODEL_FR;
-  } else if (locale == "en") {
-    return IDR_ADS_USER_MODEL_EN;
-  } else {
-    NOTREACHED();
-    return 0;
-  }
+  if (g_user_model_resource_ids.find(locale) != g_user_model_resource_ids.end())
+    return g_user_model_resource_ids[locale];
+
+  NOTREACHED();
+  return 0;
 }
 
 net::URLFetcher::RequestType URLMethodToRequestType(
@@ -157,6 +160,11 @@ std::vector<ads::AdInfo> GetAdsForCategoryOnFileTaskRunner(
   backend->GetAdsForCategory(category, ads);
 
   return ads;
+}
+
+bool ResetOnFileTaskRunner(
+    const base::FilePath& path) {
+  return base::DeleteFile(path, false);
 }
 
 bool SaveBundleStateOnFileTaskRunner(
@@ -462,7 +470,16 @@ void AdsServiceImpl::OnSaved(
 
 void AdsServiceImpl::Reset(const std::string& name,
                            ads::OnResetCallback callback) {
-  // TODO(bridiver) - implement
+  base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
+      base::BindOnce(&ResetOnFileTaskRunner, base_path_.AppendASCII(name)),
+      base::BindOnce(&AdsServiceImpl::OnReset,
+                     AsWeakPtr(),
+                     std::move(callback)));
+}
+
+void AdsServiceImpl::OnReset(const ads::OnResetCallback& callback,
+                             bool success) {
+  callback(success ? ads::Result::SUCCESS : ads::Result::FAILED);
 }
 
 void AdsServiceImpl::GetAdsForCategory(
@@ -579,8 +596,16 @@ const std::string AdsServiceImpl::GetSSID() const {
 }
 
 const std::vector<std::string> AdsServiceImpl::GetLocales() const {
-  // TODO(bridiver) - re-implement this
-  return l10n_util::GetAvailableLocales();
+  std::vector<std::string> locales;
+
+  for (std::map<std::string, int>::iterator it =
+          g_user_model_resource_ids.begin();
+        it != g_user_model_resource_ids.end();
+        ++it) {
+    locales.push_back(it->first);
+  }
+
+  return locales;
 }
 
 const std::string AdsServiceImpl::GetAdsLocale() const {
