@@ -50,6 +50,7 @@ void AdsTabHelper::DidFinishLoad(
 }
 
 void AdsTabHelper::DidAttachInterstitialPage() {
+  // TODO maybe this shouldn't fire? Are we tracking times?
   TabUpdated();
 }
 
@@ -92,12 +93,8 @@ void AdsTabHelper::OnVisibilityChanged(content::Visibility visibility) {
 }
 
 void AdsTabHelper::WebContentsDestroyed() {
-  LOG(ERROR) << "1 " << ads_service_;
-  if (ads_service_) {
-    LOG(ERROR) << "2";
+  if (ads_service_)
     ads_service_->TabClosed(tab_id_);
-    LOG(ERROR) << "3";
-  }
 }
 
 void AdsTabHelper::OnBrowserSetLastActive(Browser* browser) {
