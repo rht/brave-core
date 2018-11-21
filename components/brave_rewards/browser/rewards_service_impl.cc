@@ -24,6 +24,7 @@
 #include "bat/ledger/media_publisher_info.h"
 #include "bat/ledger/publisher_info.h"
 #include "bat/ledger/wallet_info.h"
+#include "brave/browser/ui/webui/brave_rewards_source.h"
 #include "brave/common/brave_switches.h"
 #include "brave/components/brave_rewards/browser/balance_report.h"
 #include "brave/components/brave_rewards/browser/publisher_info_database.h"
@@ -40,6 +41,7 @@
 #include "components/favicon/core/favicon_service.h"
 #include "components/favicon_base/favicon_types.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/url_data_source.h"
 #include "content_site.h"
 #include "extensions/buildflags/buildflags.h"
 #include "net/base/escape.h"
@@ -296,6 +298,10 @@ RewardsServiceImpl::RewardsServiceImpl(Profile* profile)
       ledger::reconcile_time = defined_reconcile_int;
     }
   }
+
+  // Set up the rewards data source
+  content::URLDataSource::Add(profile_,
+                              std::make_unique<BraveRewardsSource>(profile_));
 }
 
 RewardsServiceImpl::~RewardsServiceImpl() {
