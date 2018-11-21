@@ -9,6 +9,7 @@
 #include "base/task/post_task.h"
 #include "brave/common/pref_names.h"
 #include "brave/components/brave_shields/browser/brave_shields_util.h"
+#include "brave/components/brave_shields/browser/brave_shields_web_contents_observer.h"
 #include "brave/components/brave_shields/common/brave_shield_constants.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/content_settings/tab_specific_content_settings.h"
@@ -181,20 +182,24 @@ bool BraveNetworkDelegateBase::OnCanSetCookie(const URLRequest& request,
     const net::CanonicalCookie& cookie,
     net::CookieOptions* options,
     bool allowed_from_caller) {
+  int frame_id;
+  int process_id;
+  int frame_tree_node_id;
+  brave_shields::GetRenderFrameInfo(&request, &frame_id, &process_id,
+                                    &frame_tree_node_id);
+
   std::shared_ptr<brave::BraveRequestInfo> ctx(
       new brave::BraveRequestInfo());
   brave::BraveRequestInfo::FillCTXFromRequest(&request, ctx);
   ctx->event_type = brave::kOnCanSetCookies;
+  ctx->tab_origin = brave_shields::BraveShieldsWebContentsObserver::
+                        GetTabURLFromRenderFrameInfo(process_id, frame_id);
+
   bool allow = std::all_of(can_set_cookies_callbacks_.begin(), can_set_cookies_callbacks_.end(),
       [&ctx](brave::OnCanSetCookiesCallback callback){
         return callback.Run(ctx);
       });
 
-  int frame_id;
-  int process_id;
-  int frame_tree_node_id;
-  brave_shields::GetRenderFrameInfo(&request, &frame_id, &process_id,
-      &frame_tree_node_id);
   base::RepeatingCallback<content::WebContents*(void)> wc_getter =
       base::BindRepeating(&GetWebContentsFromProcessAndFrameId, process_id,
                           frame_id);
