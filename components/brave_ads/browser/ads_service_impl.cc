@@ -217,6 +217,8 @@ AdsServiceImpl::AdsServiceImpl(Profile* profile) :
 
   if (is_enabled())
     Start();
+  else
+    Stop();
 }
 
 AdsServiceImpl::~AdsServiceImpl() {
@@ -340,7 +342,7 @@ void AdsServiceImpl::SetIdleThreshold(const int threshold) {
 }
 
 bool AdsServiceImpl::IsNotificationsAvailable() const {
-  #if BUILDFLAG(ENABLE_NATIVE_NOTIFICATIONS)
+#if BUILDFLAG(ENABLE_NATIVE_NOTIFICATIONS)
   return true;
 #else
   return false;
