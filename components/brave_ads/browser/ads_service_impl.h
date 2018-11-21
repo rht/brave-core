@@ -112,8 +112,7 @@ class AdsServiceImpl : public AdsService,
   void GetAdsForCategory(
       const std::string& category,
       ads::OnGetAdsForCategoryCallback callback) override;
-  void GetAdForSampleCategory(
-      ads::OnGetAdForSampleCategoryCallback callback) override;
+  void GetAdSampleBundle(ads::OnGetAdSampleBundleCallback callback) override;
   bool GetUrlComponents(
       const std::string& url,
       ads::UrlComponents* components) const override;

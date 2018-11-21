@@ -90,8 +90,8 @@ class AdsNotificationHandler : public NotificationHandler {
 namespace {
 
 static std::map<std::string, int> g_schema_resource_ids = {
-  {"catalog-schema.json", IDR_ADS_CATALOG_SCHEMA},
-  {"bundle-schema.json", IDR_ADS_BUNDLE_SCHEMA},
+  {"catalog", IDR_ADS_CATALOG_SCHEMA},
+  {"bundle", IDR_ADS_BUNDLE_SCHEMA},
 };
 
 int GetSchemaResourceId(const std::string& name) {
@@ -508,10 +508,15 @@ void AdsServiceImpl::OnGetAdsForCategory(
       ads);
 }
 
+void AdsServiceImpl::GetAdSampleBundle(
+    ads::OnGetAdSampleBundleCallback callback) {
+  base::StringPiece sample_bundle_raw =
+      ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
+          IDR_ADS_SAMPLE_BUNDLE);
 
-void AdsServiceImpl::GetAdForSampleCategory(
-    ads::OnGetAdForSampleCategoryCallback callback) {
-  // TODO(bridiver)
+  std::string sample_bundle;
+  sample_bundle_raw.CopyToString(&sample_bundle);
+  callback(ads::Result::SUCCESS, sample_bundle);
 }
 
 void AdsServiceImpl::OnShow(Profile* profile,
@@ -574,9 +579,7 @@ void AdsServiceImpl::OpenSettings(Profile* profile,
 
 void AdsServiceImpl::GetClientInfo(ads::ClientInfo* client_info) const {
   // TODO(bridiver) - these eventually get used in a catalog request
-  // and seem unecessary. Seems like it would be better to get the catalog from
-  // S3 and we should actually be filtering this stuff out from the headers when
-  // making requests as well
+  // and seem like potential privacy issues
 
   // this doesn't seem necessary
   client_info->application_version = "";
