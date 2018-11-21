@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/macros.h"
+#include "base/memory/weak_ptr.h"
 #include "chrome/browser/importer/profile_writer.h"
 #include "net/cookies/canonical_cookie.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
@@ -19,7 +20,7 @@ class BraveInProcessImporterBridge;
 class BraveProfileWriter : public ProfileWriter,
                            public brave_rewards::RewardsServiceObserver {
  public:
-  explicit BraveProfileWriter(Profile* profile);
+  BraveProfileWriter(Profile* profile);
 
   virtual void AddCookies(const std::vector<net::CanonicalCookie>& cookies);
   virtual void UpdateStats(const BraveStats& stats);
@@ -41,6 +42,7 @@ class BraveProfileWriter : public ProfileWriter,
  protected:
   friend class base::RefCountedThreadSafe<BraveProfileWriter>;
   const scoped_refptr<base::SequencedTaskRunner> task_runner_;
+  void CancelWalletImport(std::string msg);
   void SetWalletProperties(brave_rewards::RewardsService* rewards_service);
   void BackupWallet();
   void OnWalletBackupComplete(bool result);
@@ -52,6 +54,7 @@ class BraveProfileWriter : public ProfileWriter,
   double new_contribution_amount_;
   unsigned int pinned_item_count_;
   BraveLedger ledger_;
+  // base::WeakPtrFactory<BraveProfileWriter> weak_ptr_factory_;
 };
 
 #endif  // BRAVE_BROWSER_IMPORTER_BRAVE_PROFILE_WRITER_H_
