@@ -41,6 +41,8 @@ source_set("browser") {
     deps += [
       "//brave/vendor/bat-native-ads",
       "//brave/components/brave_ads/resources",
+      "//components/dom_distiller/content/browser",
+      "//components/dom_distiller/core",
       "//components/history/core/browser",
       "//components/history/core/common",
       "//components/wifi",

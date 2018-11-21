@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/macros.h"
+#include "base/memory/weak_ptr.h"
 #include "build/build_config.h"
 #include "chrome/browser/ui/browser_list_observer.h"
 #include "components/sessions/core/session_id.h"
@@ -15,6 +16,16 @@
 #include "content/public/browser/web_contents_user_data.h"
 
 class Browser;
+
+namespace dom_distiller {
+
+class DistillerPage;
+
+namespace proto {
+class DomDistillerResult;
+}  // namespace proto
+
+}  // namespace dom_distiller
 
 namespace brave_ads {
 
@@ -33,6 +44,7 @@ class AdsTabHelper : public content::WebContentsObserver,
   void TabUpdated();
 
   // content::WebContentsObserver overrides.
+  void DocumentOnLoadCompletedInMainFrame() override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void DidAttachInterstitialPage() override;
@@ -49,10 +61,17 @@ class AdsTabHelper : public content::WebContentsObserver,
   void OnBrowserSetLastActive(Browser* browser) override;
   void OnBrowserNoLongerActive(Browser* browser) override;
 
+  void OnWebContentsDistillationDone(
+      std::unique_ptr<dom_distiller::DistillerPage>,
+      std::unique_ptr<dom_distiller::proto::DomDistillerResult> result,
+      bool distillation_successful);
+
   SessionID tab_id_;
   AdsService* ads_service_;  // NOT OWNED
   bool is_active_;
   bool is_browser_active_;
+
+  base::WeakPtrFactory<AdsTabHelper> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AdsTabHelper);
 };

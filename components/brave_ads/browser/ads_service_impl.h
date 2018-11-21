@@ -56,6 +56,7 @@ class AdsServiceImpl : public AdsService,
   void TabClosed(SessionID tab_id) override;
   void OnMediaStart(SessionID tab_id) override;
   void OnMediaStop(SessionID tab_id) override;
+  void ClassifyPage(const std::string& url, const std::string& page) override;
 
   void Shutdown() override;
 
@@ -122,8 +123,6 @@ class AdsServiceImpl : public AdsService,
                     const ads::LogLevel log_level) const override;
   void SetIdleThreshold(const int threshold) override;
   bool IsNotificationsAvailable() const override;
-  bool IsNotificationsConfigured() const override;
-  bool IsNotificationsEnabled() const override;
   bool IsNotificationsExpired() const override;
   void GetUserModelForLocale(const std::string& locale,
                              ads::OnLoadCallback callback) const override;

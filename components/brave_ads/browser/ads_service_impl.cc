@@ -32,6 +32,7 @@
 #include "components/wifi/wifi_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_fetcher.h"
+#include "third_party/dom_distiller_js/dom_distiller.pb.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/message_center/public/cpp/notification.h"
@@ -322,6 +323,14 @@ void AdsServiceImpl::TabClosed(SessionID tab_id) {
   ads_->TabClosed(tab_id.id());
 }
 
+void AdsServiceImpl::ClassifyPage(const std::string& url,
+                                  const std::string& page) {
+  if (!ads_)
+    return
+
+  ads_->ClassifyPage(url, page);
+}
+
 int AdsServiceImpl::GetIdleThreshold() {
   return profile_->GetPrefs()->GetInteger(prefs::kBraveAdsIdleThreshold);
 }
@@ -336,14 +345,6 @@ bool AdsServiceImpl::IsNotificationsAvailable() const {
 #else
   return false;
 #endif
-}
-
-bool AdsServiceImpl::IsNotificationsConfigured() const {
-  return IsNotificationsAvailable();
-}
-
-bool AdsServiceImpl::IsNotificationsEnabled() const {
-  return IsNotificationsAvailable();
 }
 
 bool AdsServiceImpl::IsNotificationsExpired() const {
