@@ -196,7 +196,20 @@ AdsServiceImpl::AdsServiceImpl(Profile* profile) :
     enabled_(false),
     last_idle_state_(ui::IdleState::IDLE_STATE_ACTIVE),
     is_foreground_(!!chrome::FindBrowserWithActiveWindow()) {
+  // TODO(bridiver) - implement `_is_testing` and other command line flags
   DCHECK(!profile_->IsOffTheRecord());
+
+#if defined(OFFICIAL_BUILD)
+  ads::_is_production = true;
+#else
+  ads::_is_production = false;
+#endif
+
+#if defined(NDEBUG)
+  ads::_is_debug = false;
+#else
+  ads::_is_debug = true;
+#endif
 
   profile_pref_change_registrar_.Init(profile_->GetPrefs());
   profile_pref_change_registrar_.Add(

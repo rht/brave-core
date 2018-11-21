@@ -42,7 +42,7 @@ AdsTabHelper::~AdsTabHelper() {
 }
 
 void AdsTabHelper::DocumentOnLoadCompletedInMainFrame() {
-  if (!ads_service_)
+  if (!ads_service_ || !ads_service_->is_enabled())
     return;
 
   auto* dom_distiller_service =
@@ -78,7 +78,7 @@ void AdsTabHelper::OnWebContentsDistillationDone(
     std::unique_ptr<dom_distiller::DistillerPage> distiller_page,
     std::unique_ptr<dom_distiller::proto::DomDistillerResult> distiller_result,
     bool distillation_successful) {
-  if (!ads_service_)
+  if (!ads_service_  || !ads_service_->is_enabled())
     return;
 
   if (distillation_successful &&
@@ -107,7 +107,7 @@ void AdsTabHelper::DidAttachInterstitialPage() {
 }
 
 void AdsTabHelper::TabUpdated() {
-  if (!ads_service_)
+  if (!ads_service_  || !ads_service_->is_enabled())
     return;
 
   ads_service_->TabUpdated(
@@ -118,7 +118,7 @@ void AdsTabHelper::TabUpdated() {
 
 void AdsTabHelper::MediaStartedPlaying(const MediaPlayerInfo& video_type,
                          const MediaPlayerId& id) {
-  if (ads_service_)
+  if (ads_service_  || !ads_service_->is_enabled())
     ads_service_->OnMediaStart(tab_id_);
 }
 
@@ -145,8 +145,10 @@ void AdsTabHelper::OnVisibilityChanged(content::Visibility visibility) {
 }
 
 void AdsTabHelper::WebContentsDestroyed() {
-  // if (ads_service_)
-  //   ads_service_->TabClosed(tab_id_);
+  if (ads_service_  || !ads_service_->is_enabled()) {
+    ads_service_->TabClosed(tab_id_);
+    ads_service_ = nullptr;
+  }
 }
 
 void AdsTabHelper::OnBrowserSetLastActive(Browser* browser) {
