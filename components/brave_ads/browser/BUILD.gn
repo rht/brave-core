@@ -13,8 +13,13 @@ source_set("browser") {
 
   deps = [
     "//base",
+    "//brave/components/brave_ads/common",
     "//components/keyed_service/content",
     "//components/keyed_service/core",
+    "//components/prefs",
+    "//components/pref_registry",
+    "//components/sessions",
+    "//url",
     # for profile.h
     "//components/domain_reliability",
     "//content/public/browser",
@@ -27,12 +32,18 @@ source_set("browser") {
       "ad_notification.h",
       "ads_service_impl.cc",
       "ads_service_impl.h",
+      "ads_tab_helper.cc",
+      "ads_tab_helper.h",
       "bundle_state_database.cc",
       "bundle_state_database.h",
     ]
 
     deps += [
       "//brave/vendor/bat-native-ads",
+      "//brave/components/brave_ads/resources",
+      "//components/history/core/browser",
+      "//components/history/core/common",
+      "//net",
       "//ui/base",
       "//ui/message_center/public/cpp",
     ]

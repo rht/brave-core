@@ -186,7 +186,7 @@ bool BundleStateDatabase::CreateAdInfoCategoryNameIndex() {
 }
 
 bool BundleStateDatabase::SaveBundleState(
-    const ads::BUNDLE_STATE& bundle_state) {
+    const ads::BundleState& bundle_state) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   bool initialized = Init();
