@@ -33,8 +33,7 @@ BraveProfileWriter::BraveProfileWriter(Profile* profile)
     : ProfileWriter(profile),
     task_runner_(base::CreateSequencedTaskRunnerWithTraits({
       base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-      base::TaskShutdownBehavior::BLOCK_SHUTDOWN})/*,
-      weak_ptr_factory_(this)*/) {
+      base::TaskShutdownBehavior::BLOCK_SHUTDOWN})) {
 }
 
 BraveProfileWriter::~BraveProfileWriter() {
@@ -116,8 +115,7 @@ void BraveProfileWriter::BackupWallet() {
       profile_default_directory.AppendASCII("ledger_state"),
       profile_default_directory.AppendASCII(backup_filename.str())),
     base::Bind(&BraveProfileWriter::OnWalletBackupComplete,
-      // weak_ptr_factory_.GetWeakPtr()));
-      base::Unretained(this)));
+      this));
 }
 
 void BraveProfileWriter::OnWalletBackupComplete(bool result) {
