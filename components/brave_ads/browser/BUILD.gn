@@ -43,6 +43,7 @@ source_set("browser") {
       "//brave/components/brave_ads/resources",
       "//components/history/core/browser",
       "//components/history/core/common",
+      "//components/wifi",
       "//net",
       "//ui/base",
       "//ui/message_center/public/cpp",

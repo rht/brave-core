@@ -29,12 +29,16 @@
 #include "chrome/common/buildflags.h"
 #include "chrome/common/chrome_constants.h"
 #include "components/prefs/pref_service.h"
+#include "components/wifi/wifi_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_fetcher.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/message_center/public/cpp/notification.h"
 
+#if defined(OS_ANDROID)
+#include "net/android/network_library.h"
+#endif
 
 namespace brave_ads {
 
@@ -591,8 +595,23 @@ const std::string AdsServiceImpl::GenerateUUID() const {
 }
 
 const std::string AdsServiceImpl::GetSSID() const {
-  // TODO(bridiver)
-  return "";
+    std::string ssid;
+#if defined(OS_WIN) || defined(OS_MACOSX)
+  std::unique_ptr<wifi::WiFiService> wifi_service(wifi::WiFiService::Create());
+  wifi_service->Initialize(nullptr);
+  std::string error;
+  wifi_service->GetConnectedNetworkSSID(&ssid, &error);
+  if (!error.empty())
+    return std::string();
+#elif defined(OS_LINUX)
+  ssid = net::GetWifiSSID();
+#elif defined(OS_ANDROID)
+  ssid = net::android::GetWifiSSID();
+#endif
+  // TODO: Handle non UTF8 SSIDs.
+  if (!base::IsStringUTF8(ssid))
+    return std::string();
+  return ssid;
 }
 
 const std::vector<std::string> AdsServiceImpl::GetLocales() const {
