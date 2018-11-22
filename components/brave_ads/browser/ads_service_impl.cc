@@ -42,6 +42,32 @@
 #endif
 
 namespace brave_ads {
+class LogStreamImpl : public ads::LogStream {
+ public:
+  LogStreamImpl(const char* file,
+                int line,
+                const ads::LogLevel log_level) {
+    switch(log_level) {
+      case ads::LogLevel::INFO:
+        log_message_ = std::make_unique<logging::LogMessage>(file, line, logging::LOG_INFO);
+        break;
+      case ads::LogLevel::WARNING:
+        log_message_ = std::make_unique<logging::LogMessage>(file, line, logging::LOG_WARNING);
+        break;
+      default:
+        log_message_ = std::make_unique<logging::LogMessage>(file, line, logging::LOG_ERROR);
+    }
+  }
+
+  std::ostream& stream() override {
+    return log_message_->stream();
+  }
+
+ private:
+  std::unique_ptr<logging::LogMessage> log_message_;
+
+  DISALLOW_COPY_AND_ASSIGN(LogStreamImpl);
+};
 
 class AdsNotificationHandler : public NotificationHandler {
  public:
@@ -82,7 +108,6 @@ class AdsNotificationHandler : public NotificationHandler {
   }
 
  private:
-
   base::WeakPtr<AdsServiceImpl> ads_service_;
 
   DISALLOW_COPY_AND_ASSIGN(AdsNotificationHandler);
@@ -802,19 +827,11 @@ void AdsServiceImpl::OnTimer(uint32_t timer_id) {
   ads_->OnTimer(timer_id);
 }
 
-std::ostream& AdsServiceImpl::Log(const char* file,
-                                  int line,
-                                  const ads::LogLevel log_level) const {
-  switch(log_level) {
-    case ads::LogLevel::INFO:
-      return logging::LogMessage(file, line, logging::LOG_INFO).stream();
-      break;
-    case ads::LogLevel::WARNING:
-      return logging::LogMessage(file, line, logging::LOG_WARNING).stream();
-      break;
-    default:
-      return logging::LogMessage(file, line, logging::LOG_ERROR).stream();
-  }
+std::unique_ptr<ads::LogStream> AdsServiceImpl::Log(
+    const char* file,
+    int line,
+    const ads::LogLevel log_level) const {
+  return std::make_unique<LogStreamImpl>(file, line, log_level);
 }
 
 }  // namespace brave_ads

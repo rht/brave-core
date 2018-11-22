@@ -120,9 +120,10 @@ class AdsServiceImpl : public AdsService,
       const std::string& url,
       ads::UrlComponents* components) const override;
   void EventLog(const std::string& json) override {}
-  std::ostream& Log(const char* file,
-                    int line,
-                    const ads::LogLevel log_level) const override;
+  std::unique_ptr<ads::LogStream> Log(
+      const char* file,
+      int line,
+      const ads::LogLevel log_level) const override;
   void SetIdleThreshold(const int threshold) override;
   bool IsNotificationsAvailable() const override;
   void LoadUserModelForLocale(
