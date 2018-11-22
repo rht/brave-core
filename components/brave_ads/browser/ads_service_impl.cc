@@ -243,6 +243,7 @@ void AdsServiceImpl::Start() {
   enabled_ = true;
   ads_.reset(ads::Ads::CreateInstance(this));
   ResetTimer();
+  ads_->Initialize();
 }
 
 void AdsServiceImpl::Stop() {
@@ -281,6 +282,10 @@ void AdsServiceImpl::Shutdown() {
 
   if (ads_) {
     ads_->SaveCachedInfo();
+    if (!enabled_) {
+      // this is kind of weird, but we need to call Initialize on disable too
+      ads_->Initialize();
+    }
     ads_.reset();
   }
   for (NotificationInfoMap::iterator it = notification_ids_.begin();
@@ -362,13 +367,9 @@ bool AdsServiceImpl::IsNotificationsAvailable() const {
 #endif
 }
 
-bool AdsServiceImpl::IsNotificationsExpired() const {
-  // TODO(bridiver) - is this still relevant?
-  return false;
-}
-
-void AdsServiceImpl::GetUserModelForLocale(const std::string& locale,
-                                           ads::OnLoadCallback callback) const {
+void AdsServiceImpl::LoadUserModelForLocale(
+    const std::string& locale,
+    ads::OnLoadCallback callback) const {
   base::StringPiece user_model_raw =
       ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
           GetUserModelResourceId(locale));
@@ -446,7 +447,7 @@ void AdsServiceImpl::Load(const std::string& name,
                      std::move(callback)));
 }
 
-const std::string AdsServiceImpl::LoadSchema(const std::string& name) {
+const std::string AdsServiceImpl::LoadJsonSchema(const std::string& name) {
   base::StringPiece schema_raw =
       ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
           GetSchemaResourceId(name));
@@ -470,12 +471,18 @@ void AdsServiceImpl::SaveBundleState(
 
 void AdsServiceImpl::OnSaveBundleState(const ads::OnSaveCallback& callback,
                                        bool success) {
+  if (!ads_)
+    return;
+
   callback(success ? ads::Result::SUCCESS : ads::Result::FAILED);
 }
 
 void AdsServiceImpl::OnLoaded(
     const ads::OnLoadCallback& callback,
     const std::string& value) {
+  if (!ads_)
+    return;
+
   if (value.empty())
     callback(ads::Result::FAILED, value);
   else
@@ -485,6 +492,9 @@ void AdsServiceImpl::OnLoaded(
 void AdsServiceImpl::OnSaved(
     const ads::OnSaveCallback& callback,
     bool success) {
+  if (!ads_)
+    return;
+
   callback(success ? ads::Result::SUCCESS : ads::Result::FAILED);
 }
 
@@ -499,12 +509,16 @@ void AdsServiceImpl::Reset(const std::string& name,
 
 void AdsServiceImpl::OnReset(const ads::OnResetCallback& callback,
                              bool success) {
+  if (!ads_)
+    return;
+
   callback(success ? ads::Result::SUCCESS : ads::Result::FAILED);
 }
 
-void AdsServiceImpl::GetAdsForCategory(
+void AdsServiceImpl::GetAds(
+      const std::string& region,
       const std::string& category,
-      ads::OnGetAdsForCategoryCallback callback) {
+      ads::OnGetAdsCallback callback) {
   base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
       base::BindOnce(&GetAdsForCategoryOnFileTaskRunner,
                     category,
@@ -512,20 +526,26 @@ void AdsServiceImpl::GetAdsForCategory(
       base::BindOnce(&AdsServiceImpl::OnGetAdsForCategory,
                      AsWeakPtr(),
                      std::move(callback),
+                     region,
                      category));
 }
 
 void AdsServiceImpl::OnGetAdsForCategory(
-    const ads::OnGetAdsForCategoryCallback& callback,
+    const ads::OnGetAdsCallback& callback,
+    const std::string& region,
     const std::string& category,
     const std::vector<ads::AdInfo>& ads) {
+  if (!ads_)
+    return;
+
   callback(ads.empty() ? ads::Result::FAILED : ads::Result::SUCCESS,
+      region,
       category,
       ads);
 }
 
-void AdsServiceImpl::GetAdSampleBundle(
-    ads::OnGetAdSampleBundleCallback callback) {
+void AdsServiceImpl::LoadSampleBundle(
+    ads::OnLoadSampleBundleCallback callback) {
   base::StringPiece sample_bundle_raw =
       ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
           IDR_ADS_SAMPLE_BUNDLE);
@@ -533,6 +553,11 @@ void AdsServiceImpl::GetAdSampleBundle(
   std::string sample_bundle;
   sample_bundle_raw.CopyToString(&sample_bundle);
   callback(ads::Result::SUCCESS, sample_bundle);
+}
+
+bool AdsServiceImpl::IsNetworkConnectionAvailable() {
+  // TODO - implement this
+  return true;
 }
 
 void AdsServiceImpl::OnShow(Profile* profile,
@@ -596,17 +621,21 @@ void AdsServiceImpl::OpenSettings(Profile* profile,
 void AdsServiceImpl::GetClientInfo(ads::ClientInfo* client_info) const {
   // TODO(bridiver) - these eventually get used in a catalog request
   // and seem like potential privacy issues
-
-  // this doesn't seem necessary
-  client_info->application_version = "";
+  // client_info->application_version = "";
+  // client_info->platform_version = "";
   // client_info.application_version = chrome::kChromeVersion;
-
-  // this doesn't seem necessary
-  client_info->platform = "";
-  // client_info.platform = base::OperatingSystemName();
-
-  // this is definitely a privacy issue
-  client_info->platform_version = "";
+#if defined(OS_MACOSX)
+  client_info->platform = ads::ClientInfoPlatformType::MACOS;
+#elif defined(OS_WIN)
+  client_info->platform = ads::ClientInfoPlatformType::WIN10;
+#elif defined(OS_LINUX)
+  client_info->platform = ads::ClientInfoPlatformType::LINUX;
+#elif defined(OS_ANDROID)
+  client_info->platform = ads::ClientInfoPlatformType::ANDROID;
+#else
+  NOTREACHED();
+  client_info->platform = ads::ClientInfoPlatformType::UNKNOWN;
+#endif
 }
 
 const std::string AdsServiceImpl::GenerateUUID() const {
@@ -674,6 +703,9 @@ void AdsServiceImpl::URLRequest(
 
 void AdsServiceImpl::OnURLFetchComplete(
     const net::URLFetcher* source) {
+  if (!ads_)
+    return;
+
   if (fetchers_.find(source) == fetchers_.end())
     return;
 

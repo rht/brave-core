@@ -107,13 +107,15 @@ class AdsServiceImpl : public AdsService,
   void SaveBundleState(
       std::unique_ptr<ads::BundleState> bundle_state,
       ads::OnSaveCallback callback) override;
-  const std::string LoadSchema(const std::string& name) override;
+  const std::string LoadJsonSchema(const std::string& name) override;
   void Reset(const std::string& name,
              ads::OnResetCallback callback) override;
-  void GetAdsForCategory(
+  void GetAds(
+      const std::string& region,
       const std::string& category,
-      ads::OnGetAdsForCategoryCallback callback) override;
-  void GetAdSampleBundle(ads::OnGetAdSampleBundleCallback callback) override;
+      ads::OnGetAdsCallback callback) override;
+
+  void LoadSampleBundle(ads::OnLoadSampleBundleCallback callback) override;
   bool GetUrlComponents(
       const std::string& url,
       ads::UrlComponents* components) const override;
@@ -123,9 +125,10 @@ class AdsServiceImpl : public AdsService,
                     const ads::LogLevel log_level) const override;
   void SetIdleThreshold(const int threshold) override;
   bool IsNotificationsAvailable() const override;
-  bool IsNotificationsExpired() const override;
-  void GetUserModelForLocale(const std::string& locale,
-                             ads::OnLoadCallback callback) const override;
+  void LoadUserModelForLocale(
+      const std::string& locale,
+      ads::OnLoadCallback callback) const override;
+  bool IsNetworkConnectionAvailable() override;
 
   // history::HistoryServiceObserver
   void OnURLsDeleted(history::HistoryService* history_service,
@@ -134,9 +137,10 @@ class AdsServiceImpl : public AdsService,
   // URLFetcherDelegate impl
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
-  void OnGetAdsForCategory(const ads::OnGetAdsForCategoryCallback& callback,
-                     const std::string& category,
-                     const std::vector<ads::AdInfo>& ads);
+  void OnGetAdsForCategory(const ads::OnGetAdsCallback& callback,
+                           const std::string& region,
+                           const std::string& category,
+                           const std::vector<ads::AdInfo>& ads);
   void OnSaveBundleState(const ads::OnSaveCallback& callback, bool success);
   void OnLoaded(const ads::OnLoadCallback& callback,
                 const std::string& value);

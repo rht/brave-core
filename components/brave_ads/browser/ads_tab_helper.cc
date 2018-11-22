@@ -42,6 +42,7 @@ AdsTabHelper::~AdsTabHelper() {
 }
 
 void AdsTabHelper::DocumentOnLoadCompletedInMainFrame() {
+  // don't start distilling is the ad service isn't enabled
   if (!ads_service_ || !ads_service_->is_enabled())
     return;
 
@@ -78,7 +79,7 @@ void AdsTabHelper::OnWebContentsDistillationDone(
     std::unique_ptr<dom_distiller::DistillerPage> distiller_page,
     std::unique_ptr<dom_distiller::proto::DomDistillerResult> distiller_result,
     bool distillation_successful) {
-  if (!ads_service_  || !ads_service_->is_enabled())
+  if (!ads_service_ )
     return;
 
   if (distillation_successful &&
@@ -107,7 +108,7 @@ void AdsTabHelper::DidAttachInterstitialPage() {
 }
 
 void AdsTabHelper::TabUpdated() {
-  if (!ads_service_  || !ads_service_->is_enabled())
+  if (!ads_service_)
     return;
 
   ads_service_->TabUpdated(
@@ -118,7 +119,7 @@ void AdsTabHelper::TabUpdated() {
 
 void AdsTabHelper::MediaStartedPlaying(const MediaPlayerInfo& video_type,
                          const MediaPlayerId& id) {
-  if (ads_service_  || !ads_service_->is_enabled())
+  if (ads_service_)
     ads_service_->OnMediaStart(tab_id_);
 }
 
@@ -145,7 +146,7 @@ void AdsTabHelper::OnVisibilityChanged(content::Visibility visibility) {
 }
 
 void AdsTabHelper::WebContentsDestroyed() {
-  if (ads_service_  || !ads_service_->is_enabled()) {
+  if (ads_service_) {
     ads_service_->TabClosed(tab_id_);
     ads_service_ = nullptr;
   }
