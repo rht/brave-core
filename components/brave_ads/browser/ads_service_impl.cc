@@ -132,6 +132,11 @@ net::URLFetcher::RequestType URLMethodToRequestType(
   }
 }
 
+void EnsureBaseDirectoryExists(const base::FilePath& path) {
+  if (!DirectoryExists(path))
+    base::CreateDirectory(path);
+}
+
 void PostWriteCallback(
     const base::Callback<void(bool success)>& callback,
     scoped_refptr<base::SequencedTaskRunner> reply_task_runner,
@@ -211,6 +216,8 @@ AdsServiceImpl::AdsServiceImpl(Profile* profile) :
   ads::_is_debug = true;
 #endif
 
+  file_task_runner_->PostTask(FROM_HERE,
+      base::BindOnce(&EnsureBaseDirectoryExists, base_path_));
   profile_pref_change_registrar_.Init(profile_->GetPrefs());
   profile_pref_change_registrar_.Add(
       prefs::kBraveAdsEnabled,

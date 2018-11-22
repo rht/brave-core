@@ -9,11 +9,15 @@ source_set("browser") {
     "ads_service.h",
     "ads_service_factory.cc",
     "ads_service_factory.h",
+    "ads_tab_helper.cc",
+    "ads_tab_helper.h",
   ]
 
   deps = [
     "//base",
     "//brave/components/brave_ads/common",
+    "//components/dom_distiller/content/browser",
+    "//components/dom_distiller/core",
     "//components/keyed_service/content",
     "//components/keyed_service/core",
     "//components/prefs",
@@ -32,8 +36,6 @@ source_set("browser") {
       "ad_notification.h",
       "ads_service_impl.cc",
       "ads_service_impl.h",
-      "ads_tab_helper.cc",
-      "ads_tab_helper.h",
       "bundle_state_database.cc",
       "bundle_state_database.h",
     ]
@@ -41,8 +43,6 @@ source_set("browser") {
     deps += [
       "//brave/vendor/bat-native-ads",
       "//brave/components/brave_ads/resources",
-      "//components/dom_distiller/content/browser",
-      "//components/dom_distiller/core",
       "//components/history/core/browser",
       "//components/history/core/common",
       "//components/wifi",
